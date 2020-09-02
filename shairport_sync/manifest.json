@@ -1,0 +1,13 @@
+{
+  "domain": "shairport_sync",
+  "name": "Shairport Sync Media Player",
+  "documentation": "https://github.com/parautenbach/hass-shairport-sync/",
+  "requirements": [],
+  "dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [
+    "@parautenbach"
+  ],
+  "config_flow": false
+}
