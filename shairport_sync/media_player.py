@@ -132,6 +132,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._states = states
         self._metadata = metadata
         self._player_state = STATE_IDLE
+        self._title = None
+        self._artist = None
         # self._subscription_state = None
 
     async def async_added_to_hass(self):
@@ -147,48 +149,48 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """(Re)Subscribe to topics."""
 
         @callback
-        def play_started(msg):
+        def play_started(_):
             """Handle the play MQTT message."""
             _LOGGER.debug("play_started")
             self._player_state = STATE_PLAYING
             # self.async_write_ha_state()
 
         @callback
-        def play_ended(msg):
+        def play_ended(_):
             """Handle the pause MQTT message."""
             _LOGGER.debug("play_ended")
             self._player_state = STATE_PAUSED
             # self.async_write_ha_state()
 
         @callback
-        def artist_updated(msg):
+        def artist_updated(message):
             """Handle the artist updated MQTT message."""
-            # payload = msg.payload
-            _LOGGER.debug("artist_updated")
+            self._artist = message.payload
+            _LOGGER.debug("New artist: %s" % self._artist)
             # self.async_write_ha_state()
 
         @callback
-        def title_updated(msg):
+        def title_updated(message):
             """Handle the title updated MQTT message."""
-            # payload = msg.payload
-            _LOGGER.debug("title_updated")
+            self._title = message.payload
+            _LOGGER.debug("New title: %s" % self._title)
             # self.async_write_ha_state()
 
         # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to topic %s (state %s)" % (topic, STATE_PLAYING))
+        _LOGGER.debug("Subscribing to %s state topic: %s" % (STATE_PLAYING, topic))
         await async_subscribe(self.hass, topic, play_started)
 
         topic = self._states[STATE_PAUSED][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to topic %s (state %s)" % (topic, STATE_PAUSED))
+        _LOGGER.debug("Subscribing to %s state topic: %s" % (STATE_PAUSED, topic))
         await async_subscribe(self.hass, topic, play_ended)
 
         topic = self._metadata[METADATA_ARTIST][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to topic %s (metadata %s)" % (topic, METADATA_ARTIST))
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_ARTIST, topic))
         await async_subscribe(self.hass, topic, artist_updated)
 
         topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to topic %s (metadata %s)" % (topic, METADATA_TITLE))
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_TITLE, topic, ))
         await async_subscribe(self.hass, topic, title_updated)
 
     @property
@@ -210,6 +212,16 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def media_content_type(self):
         """Return the content type of currently playing media."""
         return MEDIA_TYPE_MUSIC
+
+    @property
+    def media_title(self):
+        """Title of current playing media."""
+        return self._title
+
+    @property
+    def media_artist(self):
+        """Artist of current playing media, music track only."""
+        return self._artist
 
     @property
     def media_image_url(self):
