@@ -308,8 +308,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Play a piece of media."""
         _LOGGER.debug("Sending play media command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
-        # data = {ATTR_MEDIA_CONTENT_TYPE: media_type, ATTR_MEDIA_CONTENT_ID: media_id}
-        # await self._async_call_service(SERVICE_PLAY_MEDIA, data)
 
     async def async_volume_up(self):
         """Turn volume up for media player."""
@@ -323,18 +321,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
-        _LOGGER.debug("Sending toggle play/pause command")
+        _LOGGER.debug("Sending toggle play/pause command; currently %s" % self._player_state)
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
-
-    async def async_update(self):
-        """Update state in HA."""
-        _LOGGER.debug("Update state invoked")
-        # for child_name in self._children:
-        #     child_state = self.hass.states.get(child_name)
-        #     if child_state and child_state.state not in OFF_STATES:
-        #         self._child_state = child_state
-        #         return
-        # self._child_state = None
