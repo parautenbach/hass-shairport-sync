@@ -16,7 +16,6 @@ from homeassistant.components.media_player.const import (
     SUPPORT_PLAY_MEDIA,
     SUPPORT_PREVIOUS_TRACK,
     SUPPORT_STOP,
-    SUPPORT_VOLUME_MUTE,
     SUPPORT_VOLUME_STEP,
 )
 from homeassistant.components.mqtt import (
@@ -92,18 +91,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 SUPPORTED_FEATURES = (
-    # flags |= SUPPORT_TURN_ON
-    # flags |= SUPPORT_TURN_OFF
-    SUPPORT_PLAY_MEDIA
-    | SUPPORT_PLAY
+    SUPPORT_PLAY
+    | SUPPORT_PLAY_MEDIA
     | SUPPORT_PAUSE
     | SUPPORT_STOP
-    | SUPPORT_VOLUME_MUTE
     | SUPPORT_NEXT_TRACK
     | SUPPORT_PREVIOUS_TRACK
     | SUPPORT_VOLUME_STEP
-    # flags |= SUPPORT_VOLUME_SET
 )
+# flags |= SUPPORT_TURN_ON
+# flags |= SUPPORT_TURN_OFF
+# flags |= SUPPORT_VOLUME_SET
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -151,30 +149,30 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         @callback
         def play_started(_):
             """Handle the play MQTT message."""
-            _LOGGER.debug("play_started")
+            _LOGGER.debug("Play started")
             self._player_state = STATE_PLAYING
-            # self.async_write_ha_state()
+            self.async_write_ha_state()
 
         @callback
         def play_ended(_):
             """Handle the pause MQTT message."""
-            _LOGGER.debug("play_ended")
+            _LOGGER.debug("Play ended")
             self._player_state = STATE_PAUSED
-            # self.async_write_ha_state()
+            self.async_write_ha_state()
 
         @callback
         def artist_updated(message):
             """Handle the artist updated MQTT message."""
             self._artist = message.payload
             _LOGGER.debug("New artist: %s" % self._artist)
-            # self.async_write_ha_state()
+            self.async_write_ha_state()
 
         @callback
         def title_updated(message):
             """Handle the title updated MQTT message."""
             self._title = message.payload
             _LOGGER.debug("New title: %s" % self._title)
-            # self.async_write_ha_state()
+            self.async_write_ha_state()
 
         # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
@@ -201,26 +199,31 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     @property
     def name(self):
         """Return the name of the player."""
+        _LOGGER.debug("Getting name: %s" % self._name)
         return self._name
 
     @property
     def state(self):
         """Return the current state of the media player."""
+        _LOGGER.debug("Getting state: %s" % self._player_state)
         return self._player_state
 
     @property
     def media_content_type(self):
         """Return the content type of currently playing media."""
+        _LOGGER.debug("Getting media content type: %s" % MEDIA_TYPE_MUSIC)
         return MEDIA_TYPE_MUSIC
 
     @property
     def media_title(self):
         """Title of current playing media."""
+        _LOGGER.debug("Getting media title: %s" % self._title)
         return self._title
 
     @property
     def media_artist(self):
         """Artist of current playing media, music track only."""
+        _LOGGER.debug("Getting media artist: %s" % self._artist)
         return self._artist
 
     @property
@@ -235,6 +238,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         # 
         # config_path = hass.config.path(YAML_CONFIG_FILE)
         # hac.allowlist_external_dirs = {hass.config.path("www")}
+        _LOGGER.debug("Getting media image URL: %s" % None)
         return None
 
     @property
@@ -265,8 +269,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     #     """Turn the media player off."""
     #     await self._async_call_service(SERVICE_TURN_OFF, allow_override=True)
 
-    async def async_mute_volume(self, mute):
-        """Mute the volume."""
+    # async def async_mute_volume(self, mute):
+    #     """Mute the volume."""
         # data = {ATTR_MEDIA_VOLUME_MUTED: mute}
         # await self._async_call_service(SERVICE_VOLUME_MUTE, data, allow_override=True)
 
@@ -277,40 +281,49 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play(self):
         """Send play command."""
+        _LOGGER.debug("Sending play command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
 
     async def async_media_pause(self):
         """Send pause command."""
+        _LOGGER.debug("Sending pause command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
 
     async def async_media_stop(self):
         """Send stop command."""
+        _LOGGER.debug("Sending stop command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
 
     async def async_media_previous_track(self):
         """Send previous track command."""
+        _LOGGER.debug("Sending skip previous command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self):
         """Send next track command."""
+        _LOGGER.debug("Sending skip next command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_NEXT)
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Play a piece of media."""
+        _LOGGER.debug("Sending play media command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
         # data = {ATTR_MEDIA_CONTENT_TYPE: media_type, ATTR_MEDIA_CONTENT_ID: media_id}
         # await self._async_call_service(SERVICE_PLAY_MEDIA, data)
 
     async def async_volume_up(self):
         """Turn volume up for media player."""
+        _LOGGER.debug("Sending volume up command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_VOLUME_UP)
 
     async def async_volume_down(self):
         """Turn volume down for media player."""
+        _LOGGER.debug("Sending volume down command")
         async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_VOLUME_DOWN)
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
+        _LOGGER.debug("Sending toggle play/pause command")
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
@@ -318,6 +331,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_update(self):
         """Update state in HA."""
+        _LOGGER.debug("Update state invoked")
         # for child_name in self._children:
         #     child_state = self.hass.states.get(child_name)
         #     if child_state and child_state.state not in OFF_STATES:
