@@ -1,5 +1,7 @@
 """For media players that are controlled via MQTT."""
 import logging
+import os.path
+import uuid
 
 import voluptuous as vol
 
@@ -9,6 +11,7 @@ from homeassistant.components.media_player import (
     PLATFORM_SCHEMA, 
 )
 from homeassistant.components.media_player.const import (
+    DOMAIN,
     MEDIA_TYPE_MUSIC,
     SUPPORT_NEXT_TRACK,
     SUPPORT_PAUSE,
@@ -35,6 +38,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.network import get_url
 
 from .const import (
     CONF_METADATA,
@@ -48,6 +52,7 @@ from .const import (
     COMMAND_VOLUME_UP,
     METADATA_ARTIST,
     METADATA_TITLE,
+    METADATA_ARTWORK,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -103,6 +108,9 @@ SUPPORTED_FEATURES = (
 # flags |= SUPPORT_TURN_OFF
 # flags |= SUPPORT_VOLUME_SET
 
+_PUBLIC_HASS_DIR = "www"
+_PUBLIC_HASS_PATH = "local"
+
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the MQTT media players."""
@@ -132,7 +140,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._player_state = STATE_IDLE
         self._title = None
         self._artist = None
-        # self._subscription_state = None
+        self._media_image_url = None
+        # todo: capture subscriptions to unsubscribe
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
@@ -174,6 +183,25 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug("New title: %s" % self._title)
             self.async_write_ha_state()
 
+        @callback
+        def artwork_updated(message):
+            """Handle the artwork updated MQTT message."""
+            # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
+            # https://en.wikipedia.org/wiki/List_of_file_signatures
+            header = " ".join("{:02X}".format(b) for b in message.payload[:4])
+            _LOGGER.debug("New artwork (%s bytes); header: %s" % (len(message.payload), header))
+
+            # todo: check www exists?
+            filename = f"{DOMAIN}.{self.entity_id}.{METADATA_ARTWORK}"
+            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
+            _LOGGER.debug(full_path)
+            with open(full_path, "wb") as f:
+                f.write(message.payload)
+
+            self._media_image_url = f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
+            _LOGGER.debug(self._media_image_url)
+            self.async_write_ha_state()
+
         # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
         _LOGGER.debug("Subscribing to %s state topic: %s" % (STATE_PLAYING, topic))
@@ -190,6 +218,10 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
         _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_TITLE, topic, ))
         await async_subscribe(self.hass, topic, title_updated)
+
+        topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_ARTWORK, topic, ))
+        await async_subscribe(self.hass, topic, artwork_updated, encoding=None)
 
     @property
     def should_poll(self):
@@ -229,17 +261,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     @property
     def media_image_url(self):
         """Image url of current playing media."""
-        # hass.config.config_path
-        # ramanToday at 22:31
-        # @Pieter I'm no expert in this, but I believe HA runs in the config folder, 
-        # so you would want to store the file at {CURRENT_PATH}/www/{FINAL/PATH/TO/FILE}. 
-        # Once you have done that, you can use the get_url function in homeassistant.helpers.network 
-        # to get the server BASE URL to create your URL {get_url RETURN}/{FINAL/PATH/TO/FILE}
-        # 
-        # config_path = hass.config.path(YAML_CONFIG_FILE)
-        # hac.allowlist_external_dirs = {hass.config.path("www")}
-        _LOGGER.debug("Getting media image URL: %s" % None)
-        return None
+        _LOGGER.debug("Getting media image URL: %s" % self._media_image_url)
+        return self._media_image_url
 
     @property
     def entity_picture(self):

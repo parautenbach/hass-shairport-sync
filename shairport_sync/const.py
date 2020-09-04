@@ -15,3 +15,4 @@ COMMAND_VOLUME_UP = "volumeup"
 
 METADATA_ARTIST = "artist"
 METADATA_TITLE = "title"
+METADATA_ARTWORK = "artwork"

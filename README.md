@@ -32,7 +32,19 @@ Add the following to your `configuration.yaml`'s `media_player` section replacin
         topic: <topic>/artist
       title:
         topic: <topic>/title
+      artwork:
+        topic: <topic>/cover
 ```
 
 ### HACS
 TODO
+
+### Troubleshooting
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.shairport_sync: debug
+```
+
+Shairport Sync's MQTT code is chatty.
