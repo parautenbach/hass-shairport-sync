@@ -9,7 +9,7 @@ from homeassistant.components.media_player import (
     # DEVICE_CLASS_SPEAKER,
     # DEVICE_CLASS_TV,
     MediaPlayerEntity,
-    PLATFORM_SCHEMA, 
+    PLATFORM_SCHEMA,
 )
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_MUSIC,
@@ -147,8 +147,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Run when entity about to be added to hass."""
         # todo: MediaPlayerEntity? call other supers?
         await super().async_added_to_hass()
-        await self._subscribe_to_topics()        
-        
+        await self._subscribe_to_topics()
+
     async def async_will_remove_from_hass(self):
         """Run when entity will be removed from hass."""
 
@@ -189,17 +189,19 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
             # https://en.wikipedia.org/wiki/List_of_file_signatures
             header = " ".join("{:02X}".format(b) for b in message.payload[:4])
-            _LOGGER.debug("New artwork (%s bytes); header: %s", len(message.payload), header)
+            _LOGGER.debug("New artwork (%s bytes); header: %s",
+                          len(message.payload), header)
 
             # todo: check www exists?
             filename = f"{self.entity_id}.{METADATA_ARTWORK}"
-            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
+            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR),
+                                     filename)
             _LOGGER.debug(full_path)
             with open(full_path, "wb") as image_fd:
                 image_fd.write(message.payload)
 
-            # since we're overwriting with the same filename we need to make it look unique in order for
-            # the hash to be different
+            # since we're overwriting with the same filename we need to make it
+            # look unique in order for the hash to be different
             self._media_image_url = f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
@@ -214,15 +216,18 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         await async_subscribe(self.hass, topic, play_ended)
 
         topic = self._metadata[METADATA_ARTIST][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_ARTIST, topic)
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
+                      METADATA_ARTIST, topic)
         await async_subscribe(self.hass, topic, artist_updated)
 
         topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_TITLE, topic)
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
+                      METADATA_TITLE, topic)
         await async_subscribe(self.hass, topic, title_updated)
 
         topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic)
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
+                      METADATA_ARTWORK, topic)
         await async_subscribe(self.hass, topic, artwork_updated, encoding=None)
 
     @property
@@ -290,13 +295,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     # async def async_mute_volume(self, mute):
     #     """Mute the volume."""
-        # data = {ATTR_MEDIA_VOLUME_MUTED: mute}
-        # await self._async_call_service(SERVICE_VOLUME_MUTE, data, allow_override=True)
 
     # async def async_set_volume_level(self, volume):
     #     """Set volume level, range 0..1."""
-    #     data = {ATTR_MEDIA_VOLUME_LEVEL: volume}
-    #     await self._async_call_service(SERVICE_VOLUME_SET, data, allow_override=True)
 
     async def async_media_play(self):
         """Send play command."""
@@ -316,7 +317,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_media_previous_track(self):
         """Send previous track command."""
         _LOGGER.debug("Sending skip previous command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_PREVIOUS)
+        async_publish(self.hass, self._remote[ATTR_TOPIC],
+                      COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self):
         """Send next track command."""
@@ -340,7 +342,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
-        _LOGGER.debug("Sending toggle play/pause command; currently %s", self._player_state)
+        # todo: set internal state
+        _LOGGER.debug("Sending toggle play/pause command; currently %s",
+                      self._player_state)
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
