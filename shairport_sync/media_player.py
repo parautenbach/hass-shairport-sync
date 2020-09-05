@@ -198,6 +198,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             with open(full_path, "wb") as f:
                 f.write(message.payload)
 
+            # since we're overwriting with the same filename we need to make it look unique in order for
+            # the hash to be different
             self._media_image_url = f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
@@ -260,7 +262,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     @property
     def media_image_url(self):
-        """Image url of current playing media."""
+        """Image URL of currently playing media."""
         _LOGGER.debug("Getting media image URL: %s" % self._media_image_url)
         return self._media_image_url
 
