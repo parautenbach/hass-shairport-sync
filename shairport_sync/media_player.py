@@ -6,12 +6,12 @@ import uuid
 import voluptuous as vol
 
 from homeassistant.components.media_player import (
-    DEVICE_CLASS_SPEAKER,    
+    # DEVICE_CLASS_SPEAKER,
+    # DEVICE_CLASS_TV,
     MediaPlayerEntity,
     PLATFORM_SCHEMA, 
 )
 from homeassistant.components.media_player.const import (
-    DOMAIN,
     MEDIA_TYPE_MUSIC,
     SUPPORT_NEXT_TRACK,
     SUPPORT_PAUSE,
@@ -192,7 +192,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug("New artwork (%s bytes); header: %s" % (len(message.payload), header))
 
             # todo: check www exists?
-            filename = f"{DOMAIN}.{self.entity_id}.{METADATA_ARTWORK}"
+            filename = f"{self.entity_id}.{METADATA_ARTWORK}"
             full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
             _LOGGER.debug(full_path)
             with open(full_path, "wb") as f:
@@ -280,9 +280,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Flag media player features that are supported."""
         return SUPPORTED_FEATURES
 
-    @property
-    def device_class(self):
-        return DEVICE_CLASS_SPEAKER
+    # @property
+    # def device_class(self):
+    #     return DEVICE_CLASS_TV
 
     # is_on
     # async def async_turn_on(self):  # async?
