@@ -131,7 +131,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     def __init__(self, hass, name, remote, states, metadata):
         """Initialize the MQTT media device."""
-        _LOGGER.debug("Initialising %s" % name)
+        _LOGGER.debug("Initialising %s", name)
         self.hass = hass
         self._name = name
         self._remote = remote
@@ -173,14 +173,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         def artist_updated(message):
             """Handle the artist updated MQTT message."""
             self._artist = message.payload
-            _LOGGER.debug("New artist: %s" % self._artist)
+            _LOGGER.debug("New artist: %s", self._artist)
             self.async_write_ha_state()
 
         @callback
         def title_updated(message):
             """Handle the title updated MQTT message."""
             self._title = message.payload
-            _LOGGER.debug("New title: %s" % self._title)
+            _LOGGER.debug("New title: %s", self._title)
             self.async_write_ha_state()
 
         @callback
@@ -189,14 +189,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
             # https://en.wikipedia.org/wiki/List_of_file_signatures
             header = " ".join("{:02X}".format(b) for b in message.payload[:4])
-            _LOGGER.debug("New artwork (%s bytes); header: %s" % (len(message.payload), header))
+            _LOGGER.debug("New artwork (%s bytes); header: %s", len(message.payload), header)
 
             # todo: check www exists?
             filename = f"{self.entity_id}.{METADATA_ARTWORK}"
             full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
             _LOGGER.debug(full_path)
-            with open(full_path, "wb") as f:
-                f.write(message.payload)
+            with open(full_path, "wb") as image_fd:
+                image_fd.write(message.payload)
 
             # since we're overwriting with the same filename we need to make it look unique in order for
             # the hash to be different
@@ -206,23 +206,23 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
         # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to %s state topic: %s" % (STATE_PLAYING, topic))
+        _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PLAYING, topic)
         await async_subscribe(self.hass, topic, play_started)
 
         topic = self._states[STATE_PAUSED][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to %s state topic: %s" % (STATE_PAUSED, topic))
+        _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PAUSED, topic)
         await async_subscribe(self.hass, topic, play_ended)
 
         topic = self._metadata[METADATA_ARTIST][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_ARTIST, topic))
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_ARTIST, topic)
         await async_subscribe(self.hass, topic, artist_updated)
 
         topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_TITLE, topic, ))
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_TITLE, topic)
         await async_subscribe(self.hass, topic, title_updated)
 
         topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s" % (METADATA_ARTWORK, topic, ))
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic)
         await async_subscribe(self.hass, topic, artwork_updated, encoding=None)
 
     @property
@@ -233,37 +233,37 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     @property
     def name(self):
         """Return the name of the player."""
-        _LOGGER.debug("Getting name: %s" % self._name)
+        _LOGGER.debug("Getting name: %s", self._name)
         return self._name
 
     @property
     def state(self):
         """Return the current state of the media player."""
-        _LOGGER.debug("Getting state: %s" % self._player_state)
+        _LOGGER.debug("Getting state: %s", self._player_state)
         return self._player_state
 
     @property
     def media_content_type(self):
         """Return the content type of currently playing media."""
-        _LOGGER.debug("Getting media content type: %s" % MEDIA_TYPE_MUSIC)
+        _LOGGER.debug("Getting media content type: %s", MEDIA_TYPE_MUSIC)
         return MEDIA_TYPE_MUSIC
 
     @property
     def media_title(self):
         """Title of current playing media."""
-        _LOGGER.debug("Getting media title: %s" % self._title)
+        _LOGGER.debug("Getting media title: %s", self._title)
         return self._title
 
     @property
     def media_artist(self):
         """Artist of current playing media, music track only."""
-        _LOGGER.debug("Getting media artist: %s" % self._artist)
+        _LOGGER.debug("Getting media artist: %s", self._artist)
         return self._artist
 
     @property
     def media_image_url(self):
         """Image URL of currently playing media."""
-        _LOGGER.debug("Getting media image URL: %s" % self._media_image_url)
+        _LOGGER.debug("Getting media image URL: %s", self._media_image_url)
         return self._media_image_url
 
     # @property
@@ -340,7 +340,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
-        _LOGGER.debug("Sending toggle play/pause command; currently %s" % self._player_state)
+        _LOGGER.debug("Sending toggle play/pause command; currently %s", self._player_state)
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
