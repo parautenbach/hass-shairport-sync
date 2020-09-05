@@ -266,16 +266,10 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug("Getting media image URL: %s" % self._media_image_url)
         return self._media_image_url
 
-    @property
-    def entity_picture(self):
-        """
-        Return image of the media playing.
-
-        The universal media player doesn't use the parent class logic, since
-        the url is coming from child entity pictures which have already been
-        sent through the API proxy.
-        """
-        return self.media_image_url
+    # @property
+    # def media_image_remotely_accessible(self):
+    #     """Whether the image URL is accessible remotely."""
+    #     return True
 
     @property
     def supported_features(self):
