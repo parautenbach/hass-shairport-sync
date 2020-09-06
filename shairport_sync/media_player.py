@@ -6,8 +6,7 @@ import uuid
 import voluptuous as vol
 
 from homeassistant.components.media_player import (
-    # DEVICE_CLASS_SPEAKER,
-    # DEVICE_CLASS_TV,
+    DEVICE_CLASS_SPEAKER,
     MediaPlayerEntity,
     PLATFORM_SCHEMA,
 )
@@ -281,9 +280,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Flag media player features that are supported."""
         return SUPPORTED_FEATURES
 
-    # @property
-    # def device_class(self):
-    #     return DEVICE_CLASS_TV
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_SPEAKER
 
     # is_on
     # async def async_turn_on(self):  # async?
