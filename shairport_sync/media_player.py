@@ -144,7 +144,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
-        # todo: MediaPlayerEntity? call other supers?
         await super().async_added_to_hass()
         await self._subscribe_to_topics()
 
