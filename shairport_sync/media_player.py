@@ -140,7 +140,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._title = None
         self._artist = None
         self._media_image_url = None
-        # todo: capture subscriptions to unsubscribe
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
@@ -149,6 +148,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_will_remove_from_hass(self):
         """Run when entity will be removed from hass."""
+        # todo: capture subscriptions to unsubscribe
 
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
@@ -190,7 +190,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug("New artwork (%s bytes); header: %s",
                           len(message.payload), header)
 
-            # todo: check www exists?
+            # todo: check that www exists?
             filename = f"{self.entity_id}.{METADATA_ARTWORK}"
             full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR),
                                      filename)
@@ -269,6 +269,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug("Getting media image URL: %s", self._media_image_url)
         return self._media_image_url
 
+    # todo: does this need to be defined?
     # @property
     # def media_image_remotely_accessible(self):
     #     """Whether the image URL is accessible remotely."""
@@ -283,19 +284,11 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def device_class(self):
         return DEVICE_CLASS_SPEAKER
 
-    # is_on
+    # todo: is_on
     # async def async_turn_on(self):  # async?
     #     """Turn the media player on."""
-    #     await self._async_call_service(SERVICE_TURN_ON, allow_override=True)
     # async def async_turn_off(self):  # async?
     #     """Turn the media player off."""
-    #     await self._async_call_service(SERVICE_TURN_OFF, allow_override=True)
-
-    # async def async_mute_volume(self, mute):
-    #     """Mute the volume."""
-
-    # async def async_set_volume_level(self, volume):
-    #     """Set volume level, range 0..1."""
 
     async def async_media_play(self):
         """Send play command."""
@@ -340,10 +333,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
-        # todo: set internal state
+        # todo: set internal state immediately or keep it to wait for the mqtt
+        #  update?
         _LOGGER.debug("Sending toggle play/pause command; currently %s",
                       self._player_state)
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
+
+# todo: reload (https://github.com/custom-components/blueprint/blob/master/custom_components/blueprint/__init__.py)
