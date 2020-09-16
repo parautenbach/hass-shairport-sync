@@ -7,8 +7,8 @@ import voluptuous as vol
 
 from homeassistant.components.media_player import (
     DEVICE_CLASS_SPEAKER,
-    MediaPlayerEntity,
     PLATFORM_SCHEMA,
+    MediaPlayerEntity,
 )
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_MUSIC,
@@ -20,38 +20,29 @@ from homeassistant.components.media_player.const import (
     SUPPORT_STOP,
     SUPPORT_VOLUME_STEP,
 )
-from homeassistant.components.mqtt import (
-    async_subscribe,
-    async_publish,
-    ATTR_TOPIC,
-)
+from homeassistant.components.mqtt import ATTR_TOPIC, async_publish, async_subscribe
 from homeassistant.components.mqtt.util import (
     valid_publish_topic,
     valid_subscribe_topic,
 )
-from homeassistant.const import (
-    CONF_NAME,
-    STATE_IDLE,
-    STATE_PLAYING,
-    STATE_PAUSED,
-)
+from homeassistant.const import CONF_NAME, STATE_IDLE, STATE_PAUSED, STATE_PLAYING
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.network import get_url
 
 from .const import (
-    CONF_METADATA,
-    CONF_REMOTE,
-    CONF_STATES,
     COMMAND_PAUSE,
     COMMAND_PLAY,
     COMMAND_SKIP_NEXT,
     COMMAND_SKIP_PREVIOUS,
     COMMAND_VOLUME_DOWN,
     COMMAND_VOLUME_UP,
+    CONF_METADATA,
+    CONF_REMOTE,
+    CONF_STATES,
     METADATA_ARTIST,
-    METADATA_TITLE,
     METADATA_ARTWORK,
+    METADATA_TITLE,
 )
 
 _LOGGER = logging.getLogger(__name__)
