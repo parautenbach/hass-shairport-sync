@@ -27,7 +27,7 @@ from homeassistant.components.mqtt import (
 )
 from homeassistant.components.mqtt.util import (
     valid_publish_topic,
-    valid_subscribe_topic
+    valid_subscribe_topic,
 )
 from homeassistant.const import (
     CONF_NAME,
@@ -56,32 +56,14 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-REMOTE_SCHEMA = vol.All(
-                    vol.Schema(
-                        {
-                            vol.Required(ATTR_TOPIC): valid_publish_topic,
-                        }
-                    ),
-                )
+REMOTE_SCHEMA = vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_publish_topic,}),)
 
 STATES_SCHEMA = cv.schema_with_slug_keys(
-    vol.All(
-        vol.Schema(
-            {
-                vol.Required(ATTR_TOPIC): valid_subscribe_topic,
-            }
-        )
-    )
+    vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_subscribe_topic,}))
 )
 
 METADATA_SCHEMA = cv.schema_with_slug_keys(
-    vol.All(
-        vol.Schema(
-            {
-                vol.Required(ATTR_TOPIC): valid_subscribe_topic,
-            }
-        )
-    )
+    vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_subscribe_topic,}))
 )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -140,6 +122,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._title = None
         self._artist = None
         self._media_image_url = None
+        self._subscriptions = []
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
@@ -148,7 +131,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_will_remove_from_hass(self):
         """Run when entity will be removed from hass."""
-        # todo: capture subscriptions to unsubscribe
+        _LOGGER.debug("Removing %s subscriptions", len(self._subscriptions))
+        [await unsubscribe() for unsubscribe in self._subscriptions]
 
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
@@ -187,46 +171,56 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
             # https://en.wikipedia.org/wiki/List_of_file_signatures
             header = " ".join("{:02X}".format(b) for b in message.payload[:4])
-            _LOGGER.debug("New artwork (%s bytes); header: %s",
-                          len(message.payload), header)
+            _LOGGER.debug(
+                "New artwork (%s bytes); header: %s", len(message.payload), header
+            )
 
             # todo: check that www exists?
             filename = f"{self.entity_id}.{METADATA_ARTWORK}"
-            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR),
-                                     filename)
+            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
             _LOGGER.debug(full_path)
             with open(full_path, "wb") as image_fd:
                 image_fd.write(message.payload)
 
             # since we're overwriting with the same filename we need to make it
             # look unique in order for the hash to be different
-            self._media_image_url = f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
+            self._media_image_url = (
+                f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
+            )
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
 
         # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
         _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PLAYING, topic)
-        await async_subscribe(self.hass, topic, play_started)
+        subscription = await async_subscribe(self.hass, topic, play_started)
+        self._subscriptions.append(subscription)
 
         topic = self._states[STATE_PAUSED][ATTR_TOPIC]
         _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PAUSED, topic)
-        await async_subscribe(self.hass, topic, play_ended)
+        subscription = await async_subscribe(self.hass, topic, play_ended)
+        self._subscriptions.append(subscription)
 
         topic = self._metadata[METADATA_ARTIST][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
-                      METADATA_ARTIST, topic)
-        await async_subscribe(self.hass, topic, artist_updated)
+        _LOGGER.debug(
+            "Subscribing to metadata topic for %s: %s", METADATA_ARTIST, topic
+        )
+        subscription = await async_subscribe(self.hass, topic, artist_updated)
+        self._subscriptions.append(subscription)
 
         topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
-                      METADATA_TITLE, topic)
-        await async_subscribe(self.hass, topic, title_updated)
+        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_TITLE, topic)
+        subscription = await async_subscribe(self.hass, topic, title_updated)
+        self._subscriptions.append(subscription)
 
         topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s",
-                      METADATA_ARTWORK, topic)
-        await async_subscribe(self.hass, topic, artwork_updated, encoding=None)
+        _LOGGER.debug(
+            "Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic
+        )
+        subscription = await async_subscribe(
+            self.hass, topic, artwork_updated, encoding=None
+        )
+        self._subscriptions.append(subscription)
 
     @property
     def should_poll(self):
@@ -308,8 +302,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_media_previous_track(self):
         """Send previous track command."""
         _LOGGER.debug("Sending skip previous command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC],
-                      COMMAND_SKIP_PREVIOUS)
+        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self):
         """Send next track command."""
@@ -335,11 +328,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Play or pause the media player."""
         # todo: set internal state immediately or keep it to wait for the mqtt
         #  update?
-        _LOGGER.debug("Sending toggle play/pause command; currently %s",
-                      self._player_state)
+        _LOGGER.debug(
+            "Sending toggle play/pause command; currently %s", self._player_state
+        )
         if self._player_state == STATE_PLAYING:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
         else:
             async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
+
 
 # todo: reload (https://github.com/custom-components/blueprint/blob/master/custom_components/blueprint/__init__.py)

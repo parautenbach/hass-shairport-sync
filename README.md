@@ -19,6 +19,9 @@ for example:
 
 ### Manual
 
+You need the Home Assistant 
+[MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
+
 Copy the `shairport_sync` folder of this repo to 
 `<config_dir>/custom_components/shairport_sync/` of your Home Assistant 
 installation. Create the `custom_components` directory if it doesn't exist.
