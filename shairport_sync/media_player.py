@@ -123,7 +123,8 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_will_remove_from_hass(self):
         """Run when entity will be removed from hass."""
         _LOGGER.debug("Removing %s subscriptions", len(self._subscriptions))
-        [await unsubscribe() for unsubscribe in self._subscriptions]
+        for unsubscribe in self._subscriptions:
+            await unsubscribe()
 
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
@@ -166,7 +167,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
                 "New artwork (%s bytes); header: %s", len(message.payload), header
             )
 
-            # todo: check that www exists?
             filename = f"{self.entity_id}.{METADATA_ARTWORK}"
             full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
             _LOGGER.debug(full_path)
@@ -181,7 +181,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
 
-        # todo: capture the remove async state below
         topic = self._states[STATE_PLAYING][ATTR_TOPIC]
         _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PLAYING, topic)
         subscription = await async_subscribe(self.hass, topic, play_started)
@@ -204,14 +203,20 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         subscription = await async_subscribe(self.hass, topic, title_updated)
         self._subscriptions.append(subscription)
 
-        topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
-        _LOGGER.debug(
-            "Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic
-        )
-        subscription = await async_subscribe(
-            self.hass, topic, artwork_updated, encoding=None
-        )
-        self._subscriptions.append(subscription)
+        if os.path.exists(self.hass.config.path(_PUBLIC_HASS_DIR)):
+            topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
+            _LOGGER.debug(
+                "Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic
+            )
+            subscription = await async_subscribe(
+                self.hass, topic, artwork_updated, encoding=None
+            )
+            self._subscriptions.append(subscription)
+        else:
+            _LOGGER.warning(
+                "Artwork won't be saved; no %s directory for public access",
+                _PUBLIC_HASS_DIR,
+            )
 
     @property
     def should_poll(self):
@@ -254,12 +259,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug("Getting media image URL: %s", self._media_image_url)
         return self._media_image_url
 
-    # todo: does this need to be defined?
-    # @property
-    # def media_image_remotely_accessible(self):
-    #     """Whether the image URL is accessible remotely."""
-    #     return True
-
     @property
     def supported_features(self):
         """Flag media player features that are supported."""
@@ -269,7 +268,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def device_class(self):
         return DEVICE_CLASS_SPEAKER
 
-    # todo: is_on
+    # is_on
     # async def async_turn_on(self):  # async?
     #     """Turn the media player on."""
     # async def async_turn_off(self):  # async?
@@ -317,8 +316,6 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
-        # todo: set internal state immediately or keep it to wait for the mqtt
-        #  update?
         _LOGGER.debug(
             "Sending toggle play/pause command; currently %s", self._player_state
         )
