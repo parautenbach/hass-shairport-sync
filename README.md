@@ -1,5 +1,6 @@
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # Shairport Sync media player for Home Assistant
 
@@ -27,26 +28,13 @@ Copy the `shairport_sync` folder of this repo to
 installation. Create the `custom_components` directory if it doesn't exist.
 
 Add the following to your `configuration.yaml`'s `media_player` section 
-replacing `<topic>` with what's in your `shairport-sync.conf` and restart
+replacing `your/mqtt/topic` with what's in your `shairport-sync.conf` and restart
 Home Assistant:
 
 ```yaml
   - platform: shairport_sync
     name: Shairport Sync Player
-    remote:
-      topic: <topic>/remote
-    states:
-      playing:
-        topic: <topic>/play_start
-      paused:
-        topic: <topic>/play_end
-    metadata:
-      artist:
-        topic: <topic>/artist
-      title:
-        topic: <topic>/title
-      artwork:
-        topic: <topic>/cover
+    topic: your/mqtt/topic
 ```
 
 Some important settings required in your `shairport-sync.conf`:
@@ -66,6 +54,15 @@ mqtt =
 
 ### HACS
 [TODO](https://hacs.xyz/)
+
+### Compatibility
+This platform has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
+0.114.1.
+
+My Shairport Sync details:
+```
+3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
+```
 
 ### Troubleshooting
 

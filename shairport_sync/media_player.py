@@ -20,11 +20,8 @@ from homeassistant.components.media_player.const import (
     SUPPORT_STOP,
     SUPPORT_VOLUME_STEP,
 )
-from homeassistant.components.mqtt import ATTR_TOPIC, async_publish, async_subscribe
-from homeassistant.components.mqtt.util import (
-    valid_publish_topic,
-    valid_subscribe_topic,
-)
+from homeassistant.components.mqtt import async_publish, async_subscribe
+from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.const import CONF_NAME, STATE_IDLE, STATE_PAUSED, STATE_PLAYING
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
@@ -37,32 +34,24 @@ from .const import (
     COMMAND_SKIP_PREVIOUS,
     COMMAND_VOLUME_DOWN,
     COMMAND_VOLUME_UP,
-    CONF_METADATA,
-    CONF_REMOTE,
-    CONF_STATES,
+    CONF_TOPIC,
     METADATA_ARTIST,
     METADATA_ARTWORK,
     METADATA_TITLE,
+    TOP_LEVEL_TOPIC_ARTIST,
+    TOP_LEVEL_TOPIC_COVER,
+    TOP_LEVEL_TOPIC_PLAY_END,
+    TOP_LEVEL_TOPIC_PLAY_START,
+    TOP_LEVEL_TOPIC_REMOTE,
+    TOP_LEVEL_TOPIC_TITLE,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-REMOTE_SCHEMA = vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_publish_topic,}),)
-
-STATES_SCHEMA = cv.schema_with_slug_keys(
-    vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_subscribe_topic,}))
-)
-
-METADATA_SCHEMA = cv.schema_with_slug_keys(
-    vol.All(vol.Schema({vol.Required(ATTR_TOPIC): valid_subscribe_topic,}))
-)
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_REMOTE): REMOTE_SCHEMA,
-        vol.Required(CONF_STATES): STATES_SCHEMA,
-        vol.Required(CONF_METADATA): METADATA_SCHEMA,
+        vol.Required(CONF_TOPIC): valid_publish_topic,
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -90,9 +79,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     player = ShairportSyncMediaPlayer(
         hass,
         config.get(CONF_NAME),
-        config.get(CONF_REMOTE),
-        config.get(CONF_STATES),
-        config.get(CONF_METADATA),
+        config.get(CONF_TOPIC),
     )
 
     async_add_entities([player])
@@ -101,14 +88,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class ShairportSyncMediaPlayer(MediaPlayerEntity):
     """Representation of an MQTT-controlled media player."""
 
-    def __init__(self, hass, name, remote, states, metadata):
+    def __init__(self, hass, name, topic):
         """Initialize the MQTT media device."""
         _LOGGER.debug("Initialising %s", name)
         self.hass = hass
         self._name = name
-        self._remote = remote
-        self._states = states
-        self._metadata = metadata
+        self._base_topic = topic
+        self._remote_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_REMOTE}"
         self._player_state = STATE_IDLE
         self._title = None
         self._artist = None
@@ -181,30 +167,30 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
 
-        topic = self._states[STATE_PLAYING][ATTR_TOPIC]
+        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_PLAY_START}"
         _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PLAYING, topic)
         subscription = await async_subscribe(self.hass, topic, play_started)
         self._subscriptions.append(subscription)
 
-        topic = self._states[STATE_PAUSED][ATTR_TOPIC]
+        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_PLAY_END}"
         _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PAUSED, topic)
         subscription = await async_subscribe(self.hass, topic, play_ended)
         self._subscriptions.append(subscription)
 
-        topic = self._metadata[METADATA_ARTIST][ATTR_TOPIC]
+        f"{self._base_topic}/{TOP_LEVEL_TOPIC_ARTIST}"
         _LOGGER.debug(
             "Subscribing to metadata topic for %s: %s", METADATA_ARTIST, topic
         )
         subscription = await async_subscribe(self.hass, topic, artist_updated)
         self._subscriptions.append(subscription)
 
-        topic = self._metadata[METADATA_TITLE][ATTR_TOPIC]
+        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_TITLE}"
         _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_TITLE, topic)
         subscription = await async_subscribe(self.hass, topic, title_updated)
         self._subscriptions.append(subscription)
 
         if os.path.exists(self.hass.config.path(_PUBLIC_HASS_DIR)):
-            topic = self._metadata[METADATA_ARTWORK][ATTR_TOPIC]
+            topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_COVER}"
             _LOGGER.debug(
                 "Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic
             )
@@ -277,42 +263,42 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_media_play(self):
         """Send play command."""
         _LOGGER.debug("Sending play command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
+        async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
     async def async_media_pause(self):
         """Send pause command."""
         _LOGGER.debug("Sending pause command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
+        async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
 
     async def async_media_stop(self):
         """Send stop command."""
         _LOGGER.debug("Sending stop command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
+        async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
 
     async def async_media_previous_track(self):
         """Send previous track command."""
         _LOGGER.debug("Sending skip previous command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_PREVIOUS)
+        async_publish(self.hass, self._remote_topic, COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self):
         """Send next track command."""
         _LOGGER.debug("Sending skip next command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_SKIP_NEXT)
+        async_publish(self.hass, self._remote_topic, COMMAND_SKIP_NEXT)
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Play a piece of media."""
         _LOGGER.debug("Sending play media command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
+        async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
     async def async_volume_up(self):
         """Turn volume up for media player."""
         _LOGGER.debug("Sending volume up command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_VOLUME_UP)
+        async_publish(self.hass, self._remote_topic, COMMAND_VOLUME_UP)
 
     async def async_volume_down(self):
         """Turn volume down for media player."""
         _LOGGER.debug("Sending volume down command")
-        async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_VOLUME_DOWN)
+        async_publish(self.hass, self._remote_topic, COMMAND_VOLUME_DOWN)
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
@@ -320,9 +306,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             "Sending toggle play/pause command; currently %s", self._player_state
         )
         if self._player_state == STATE_PLAYING:
-            async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PAUSE)
+            async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
         else:
-            async_publish(self.hass, self._remote[ATTR_TOPIC], COMMAND_PLAY)
+            async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
 
 # todo: reload (https://github.com/custom-components/blueprint/blob/master/custom_components/blueprint/__init__.py)
