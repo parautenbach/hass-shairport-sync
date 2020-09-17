@@ -1,7 +1,6 @@
 """For media players that are controlled via MQTT."""
+import hashlib
 import logging
-import os.path
-import uuid
 
 from homeassistant.components.media_player import (
     DEVICE_CLASS_SPEAKER,
@@ -23,7 +22,6 @@ from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.const import CONF_NAME, STATE_PAUSED, STATE_PLAYING
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.network import get_url
 import voluptuous as vol
 
 from .const import (
@@ -92,7 +90,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._player_state = STATE_PAUSED
         self._title = None
         self._artist = None
-        self._media_image_url = None
+        self._media_image = None
         self._subscriptions = []
 
     async def async_added_to_hass(self):
@@ -146,52 +144,28 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug(
                 "New artwork (%s bytes); header: %s", len(message.payload), header
             )
-
-            filename = f"{self.entity_id}.artwork"
-            full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
-            _LOGGER.debug(full_path)
-            with open(full_path, "wb") as image_fd:
-                image_fd.write(message.payload)
-
-            # since we're overwriting with the same filename we need to make it
-            # look unique in order for the hash to be different
-            self._media_image_url = (
-                f"{get_url(self.hass)}/{_PUBLIC_HASS_PATH}/{filename}?{uuid.uuid1()}"
-            )
-            _LOGGER.debug(self._media_image_url)
+            self._media_image = message.payload
             self.async_write_ha_state()
 
         topic_map = {
-            TOP_LEVEL_TOPIC_PLAY_START: play_started,
-            TOP_LEVEL_TOPIC_PLAY_END: play_ended,
-            TOP_LEVEL_TOPIC_ARTIST: artist_updated,
-            TOP_LEVEL_TOPIC_TITLE: title_updated,
+            TOP_LEVEL_TOPIC_PLAY_START: (play_started, "utf-8"),
+            TOP_LEVEL_TOPIC_PLAY_END: (play_ended, "utf-8"),
+            TOP_LEVEL_TOPIC_ARTIST: (artist_updated, "utf-8"),
+            TOP_LEVEL_TOPIC_TITLE: (title_updated, "utf-8"),
+            TOP_LEVEL_TOPIC_COVER: (artwork_updated, None),
         }
 
-        for (top_level_topic, topic_callback) in topic_map.items():
+        for (top_level_topic, (topic_callback, encoding)) in topic_map.items():
             topic = f"{self._base_topic}/{top_level_topic}"
             _LOGGER.debug(
                 "Subscribing to topic %s with callback %s",
                 topic,
                 topic_callback.__name__,
             )
-            subscription = await async_subscribe(self.hass, topic, topic_callback)
-            self._subscriptions.append(subscription)
-
-        if os.path.exists(self.hass.config.path(_PUBLIC_HASS_DIR)):
-            cover_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_COVER}"
-            _LOGGER.debug(
-                "Subscribing to topic %s with callback %s", cover_topic, artwork_updated
-            )
             subscription = await async_subscribe(
-                self.hass, cover_topic, artwork_updated, encoding=None
+                self.hass, topic, topic_callback, encoding=encoding
             )
             self._subscriptions.append(subscription)
-        else:
-            _LOGGER.warning(
-                "Artwork won't be saved; no %s directory for public access",
-                _PUBLIC_HASS_DIR,
-            )
 
     @property
     def should_poll(self):
@@ -229,10 +203,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return self._artist
 
     @property
-    def media_image_url(self):
-        """Image URL of currently playing media."""
-        _LOGGER.debug("Getting media image URL: %s", self._media_image_url)
-        return self._media_image_url
+    def media_image_hash(self):
+        """Hash value for the media image."""
+        if self._media_image:
+            image_hash = hashlib.md5(self._media_image).hexdigest()
+            _LOGGER.debug("Media image hash: %s", image_hash)
+            return image_hash
+        return None
 
     @property
     def supported_features(self):
@@ -298,6 +275,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
         else:
             async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
+
+    async def async_get_media_image(self):
+        """Fetch the image of the currently playing media."""
+        _LOGGER.debug("Getting media image")
+        if self._media_image:
+            return (self._media_image, "image/jpeg")
+        return (None, None)
 
 
 # todo: reload (https://github.com/custom-components/blueprint/blob/master/custom_components/blueprint/__init__.py)
