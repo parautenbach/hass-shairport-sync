@@ -3,8 +3,6 @@ import logging
 import os.path
 import uuid
 
-import voluptuous as vol
-
 from homeassistant.components.media_player import (
     DEVICE_CLASS_SPEAKER,
     PLATFORM_SCHEMA,
@@ -22,10 +20,11 @@ from homeassistant.components.media_player.const import (
 )
 from homeassistant.components.mqtt import async_publish, async_subscribe
 from homeassistant.components.mqtt.util import valid_publish_topic
-from homeassistant.const import CONF_NAME, STATE_IDLE, STATE_PAUSED, STATE_PLAYING
+from homeassistant.const import CONF_NAME, STATE_PAUSED, STATE_PLAYING
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.network import get_url
+import voluptuous as vol
 
 from .const import (
     COMMAND_PAUSE,
@@ -35,9 +34,6 @@ from .const import (
     COMMAND_VOLUME_DOWN,
     COMMAND_VOLUME_UP,
     CONF_TOPIC,
-    METADATA_ARTIST,
-    METADATA_ARTWORK,
-    METADATA_TITLE,
     TOP_LEVEL_TOPIC_ARTIST,
     TOP_LEVEL_TOPIC_COVER,
     TOP_LEVEL_TOPIC_PLAY_END,
@@ -77,9 +73,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Set up the MQTT media players."""
     _LOGGER.debug(config)
     player = ShairportSyncMediaPlayer(
-        hass,
-        config.get(CONF_NAME),
-        config.get(CONF_TOPIC),
+        hass, config.get(CONF_NAME), config.get(CONF_TOPIC),
     )
 
     async_add_entities([player])
@@ -95,7 +89,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._name = name
         self._base_topic = topic
         self._remote_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_REMOTE}"
-        self._player_state = STATE_IDLE
+        self._player_state = STATE_PAUSED
         self._title = None
         self._artist = None
         self._media_image_url = None
@@ -153,7 +147,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
                 "New artwork (%s bytes); header: %s", len(message.payload), header
             )
 
-            filename = f"{self.entity_id}.{METADATA_ARTWORK}"
+            filename = f"{self.entity_id}.artwork"
             full_path = os.path.join(self.hass.config.path(_PUBLIC_HASS_DIR), filename)
             _LOGGER.debug(full_path)
             with open(full_path, "wb") as image_fd:
@@ -167,35 +161,30 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug(self._media_image_url)
             self.async_write_ha_state()
 
-        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_PLAY_START}"
-        _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PLAYING, topic)
-        subscription = await async_subscribe(self.hass, topic, play_started)
-        self._subscriptions.append(subscription)
+        topic_map = {
+            TOP_LEVEL_TOPIC_PLAY_START: play_started,
+            TOP_LEVEL_TOPIC_PLAY_END: play_ended,
+            TOP_LEVEL_TOPIC_ARTIST: artist_updated,
+            TOP_LEVEL_TOPIC_TITLE: title_updated,
+        }
 
-        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_PLAY_END}"
-        _LOGGER.debug("Subscribing to %s state topic: %s", STATE_PAUSED, topic)
-        subscription = await async_subscribe(self.hass, topic, play_ended)
-        self._subscriptions.append(subscription)
-
-        f"{self._base_topic}/{TOP_LEVEL_TOPIC_ARTIST}"
-        _LOGGER.debug(
-            "Subscribing to metadata topic for %s: %s", METADATA_ARTIST, topic
-        )
-        subscription = await async_subscribe(self.hass, topic, artist_updated)
-        self._subscriptions.append(subscription)
-
-        topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_TITLE}"
-        _LOGGER.debug("Subscribing to metadata topic for %s: %s", METADATA_TITLE, topic)
-        subscription = await async_subscribe(self.hass, topic, title_updated)
-        self._subscriptions.append(subscription)
+        for (top_level_topic, topic_callback) in topic_map.items():
+            topic = f"{self._base_topic}/{top_level_topic}"
+            _LOGGER.debug(
+                "Subscribing to topic %s with callback %s",
+                topic,
+                topic_callback.__name__,
+            )
+            subscription = await async_subscribe(self.hass, topic, topic_callback)
+            self._subscriptions.append(subscription)
 
         if os.path.exists(self.hass.config.path(_PUBLIC_HASS_DIR)):
-            topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_COVER}"
+            cover_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_COVER}"
             _LOGGER.debug(
-                "Subscribing to metadata topic for %s: %s", METADATA_ARTWORK, topic
+                "Subscribing to topic %s with callback %s", cover_topic, artwork_updated
             )
             subscription = await async_subscribe(
-                self.hass, topic, artwork_updated, encoding=None
+                self.hass, cover_topic, artwork_updated, encoding=None
             )
             self._subscriptions.append(subscription)
         else:
