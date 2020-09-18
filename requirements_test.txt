@@ -1,4 +1,9 @@
-pep8
-pydocstyle
-black
-flake8
+black==19.10b0
+flake8==3.8.3
+flake8-docstrings==1.5.0
+pydocstyle==5.0.2
+pylint==2.4.4
+pylint-strict-informational==0.1
+pytest
+pytest-cov==2.9.0
+pytest-homeassistant
