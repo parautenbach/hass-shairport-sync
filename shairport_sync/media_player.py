@@ -61,10 +61,6 @@ SUPPORTED_FEATURES = (
 )
 # flags |= SUPPORT_TURN_ON
 # flags |= SUPPORT_TURN_OFF
-# flags |= SUPPORT_VOLUME_SET
-
-_PUBLIC_HASS_DIR = "www"
-_PUBLIC_HASS_PATH = "local"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
