@@ -1,7 +1,3 @@
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 # Shairport Sync media player for Home Assistant
 
 This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/) 
