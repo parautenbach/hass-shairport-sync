@@ -136,7 +136,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             """Handle the artwork updated MQTT message."""
             # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
             # https://en.wikipedia.org/wiki/List_of_file_signatures
-            header = " ".join("{:02X}".format(b) for b in message.payload[:4])
+            header = " ".join(f"{b:02X}" for b in message.payload[:4])
             _LOGGER.debug(
                 "New artwork (%s bytes); header: %s", len(message.payload), header
             )
@@ -156,6 +156,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug(
                 "Subscribing to topic %s with callback %s",
                 topic,
+                # pylint: disable=no-member
                 topic_callback.__name__,
             )
             subscription = await async_subscribe(
@@ -214,6 +215,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     @property
     def device_class(self):
+        """The device class."""
         return DEVICE_CLASS_SPEAKER
 
     # is_on
