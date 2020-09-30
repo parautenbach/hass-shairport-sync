@@ -1,3 +1,8 @@
+[![GitHub Release][releases-shield]][releases]
+[![License][license-shield]](LICENSE)
+[![hacs][hacs-shield]][hacs]
+[![Code style: black][black-shield]](black)
+
 # Shairport Sync media player for Home Assistant
 
 This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/) 
@@ -72,3 +77,13 @@ logger:
 ```
 
 Shairport Sync's MQTT code is chatty so you will see duplicate log entries.
+
+<!---->
+
+[hacs]: https://github.com/custom-components/hacs
+[hacs-shield]: https://img.shields.io/badge/HACS-Default-orange.svg
+[license-shield]: https://img.shields.io/github/license/parautenbach/hass-shairport-sync.svg
+[releases]: https://github.com/parautenbach/hass-shairport-sync/releases
+[releases-shield]: https://img.shields.io/github/v/release/parautenbach/hass-shairport-sync
+[black]: https://github.com/psf/black
+[black-shield]: https://img.shields.io/badge/code%20style-black-000000.svg

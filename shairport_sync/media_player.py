@@ -101,7 +101,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             await unsubscribe()
 
     async def _subscribe_to_topics(self):
-        """(Re)Subscribe to topics."""
+        """(Re)subscribe to topics."""
 
         @callback
         def play_started(_):
@@ -143,6 +143,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self._media_image = message.payload
             self.async_write_ha_state()
 
+        # top_level_topic: (callback, encoding)
         topic_map = {
             TOP_LEVEL_TOPIC_PLAY_START: (play_started, "utf-8"),
             TOP_LEVEL_TOPIC_PLAY_END: (play_ended, "utf-8"),
