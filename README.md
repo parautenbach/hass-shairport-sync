@@ -5,12 +5,12 @@
 
 # Shairport Sync media player for Home Assistant
 
-This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/) 
-for [Home Assistant](https://home-assistant.io/) allows you to control and get 
+This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/)
+for [Home Assistant](https://home-assistant.io/) allows you to control and get
 updates from a [Shairport Sync](https://github.com/mikebrady/shairport-sync/)
 installation using [MQTT](https://mqtt.org/).
 
-You need to compile Shairport Sync with at least the MQTT and metadata options, 
+You need to compile Shairport Sync with at least the MQTT and metadata options,
 for example:
 
 ```
@@ -21,14 +21,16 @@ for example:
 
 ### Manual
 
-You need the Home Assistant 
+You need the Home Assistant
 [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
 
-Copy the `shairport_sync` folder of this repo to 
-`<config_dir>/custom_components/shairport_sync/` of your Home Assistant 
-installation. Create the `custom_components` directory if it doesn't exist.
+Copy the `shairport_sync` directory of this repo to
+`<config_dir>/custom_components/` of your Home Assistant
+installation. Create the `custom_components` directory if it doesn't exist. In other
+words, the contents of the `shairport_sync` directory in this repo must be in
+`<config_dir>/custom_components/shairport_sync/`.
 
-Add the following to your `configuration.yaml`'s `media_player` section 
+Add the following to your `configuration.yaml`'s `media_player` section
 replacing `your/mqtt/topic` with what's in your `shairport-sync.conf` and restart
 Home Assistant:
 
@@ -41,7 +43,7 @@ Home Assistant:
 Some important settings required in your `shairport-sync.conf`:
 
 ```
-mqtt = 
+mqtt =
 {
     enabled = "yes";
     hostname = "<host_of_your_mqtt_broker>";
@@ -65,9 +67,9 @@ My Shairport Sync details:
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
 
-### Troubleshooting
+## Troubleshooting
 
-Enable logging and log an issue if necessary. 
+Enable logging and log an issue if necessary.
 
 ```yaml
 logger:
@@ -77,6 +79,12 @@ logger:
 ```
 
 Shairport Sync's MQTT code is chatty so you will see duplicate log entries.
+
+## Related projects
+
+- [A generic MQTT media player](https://github.com/TroyFernandes/hass-mqtt-mediaplayer)
+- [A template media player](https://github.com/Sennevds/media_player.template)
+- [A multiroom MQTT media player](https://github.com/jonaseickhoff/hass-multiroom-mqtt-mediaplayer)
 
 <!---->
 
