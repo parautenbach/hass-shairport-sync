@@ -5,3 +5,4 @@ __pycache__
 scripts
 *.zip
 htmlcov
+.coverage
