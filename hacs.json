@@ -1,0 +1,7 @@
+{
+  "name": "shairport-sync media_player",
+  "render_readme": true,
+  "content_in_root": true,
+  "iot_class": ["Local Push"],
+  "domains": ["media_player"]
+}
