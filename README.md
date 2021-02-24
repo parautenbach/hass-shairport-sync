@@ -1,11 +1,11 @@
 # Shairport Sync media player for Home Assistant
 
-This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/) 
-for [Home Assistant](https://home-assistant.io/) allows you to control and get 
+This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/)
+for [Home Assistant](https://home-assistant.io/) allows you to control and get
 updates from a [Shairport Sync](https://github.com/mikebrady/shairport-sync/)
 installation using [MQTT](https://mqtt.org/).
 
-You need to compile Shairport Sync with at least the MQTT and metadata options, 
+You need to compile Shairport Sync with at least the MQTT and metadata options,
 for example:
 
 ```
@@ -16,14 +16,14 @@ for example:
 
 ### Manual
 
-You need the Home Assistant 
+You need the Home Assistant
 [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
 
-Copy the `shairport_sync` folder of this repo to 
-`<config_dir>/custom_components/shairport_sync/` of your Home Assistant 
+Copy the `shairport_sync` folder of this repo to
+`<config_dir>/custom_components/shairport_sync/` of your Home Assistant
 installation. Create the `custom_components` directory if it doesn't exist.
 
-Add the following to your `configuration.yaml`'s `media_player` section 
+Add the following to your `configuration.yaml`'s `media_player` section
 replacing `your/mqtt/topic` with what's in your `shairport-sync.conf` and restart
 Home Assistant:
 
@@ -36,7 +36,7 @@ Home Assistant:
 Some important settings required in your `shairport-sync.conf`:
 
 ```
-mqtt = 
+mqtt =
 {
     enabled = "yes";
     hostname = "<host_of_your_mqtt_broker>";
@@ -49,7 +49,7 @@ mqtt =
 ```
 
 ### HACS
-[TODO](https://hacs.xyz/)
+Add the repository URL as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories).
 
 ### Compatibility
 This platform has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
@@ -62,7 +62,7 @@ My Shairport Sync details:
 
 ### Troubleshooting
 
-Enable logging and log an issue if necessary. 
+Enable logging and log an issue if necessary.
 
 ```yaml
 logger:

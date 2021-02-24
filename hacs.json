@@ -1,5 +1,5 @@
 {
-  "name": "shairport-sync media_player",
+  "name": "Shairport Sync Media Player",
   "render_readme": true,
   "content_in_root": true,
   "iot_class": ["Local Push"],
