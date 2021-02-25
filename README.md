@@ -60,7 +60,7 @@ My Shairport Sync details:
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 Enable logging and log an issue if necessary.
 
@@ -72,3 +72,47 @@ logger:
 ```
 
 Shairport Sync's MQTT code is chatty so you will see duplicate log entries.
+
+## Advanced Usage
+
+If you have a device such as a Raspberry Pi that runs Shairport Sync which is connected to an
+audio system that can be switched on and off with a smart plug and you would like to have a power
+button on your media player card in Lovelace (Home Assistant) you can create a universal player.
+Here is an example based on the example player config above.
+
+```yaml
+  - platform: universal
+    name: Universal Shairport Sync Player
+    children:
+      - media_player.shairport_sync_player
+    commands:
+      turn_on:
+        service: switch.turn_on
+        target:
+          entity_id: switch.your_smart_plug
+      turn_off:
+        service: switch.turn_off
+        target:
+          entity_id: switch.your_smart_plug
+    attributes:
+      state: switch.your_smart_plug
+```
+
+Here is one way to use this with the custom [Mini Media Player](https://github.com/kalkih/mini-media-player) card.
+
+```yaml
+  - type: custom:mini-media-player
+    name: Shairport Sync Player
+    entity: media_player.universal_shairport_sync_player
+    artwork: cover
+    volume_stateless: true
+    hide:
+      power: false
+      power_state: false
+      volume: false
+      mute: true
+    idle_view:
+      when_idle: false
+      when_paused: false
+      when_standby: false
+```
