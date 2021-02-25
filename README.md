@@ -77,8 +77,9 @@ Shairport Sync's MQTT code is chatty so you will see duplicate log entries.
 
 If you have a device such as a Raspberry Pi that runs Shairport Sync which is connected to an
 audio system that can be switched on and off with a smart plug and you would like to have a power
-button on your media player card in Lovelace (Home Assistant) you can create a universal player.
-Here is an example based on the example player config above.
+button on your media player card in Lovelace (Home Assistant) you can create a
+[universal player](https://www.home-assistant.io/integrations/universal/). Here is an example
+based on the example player config above.
 
 ```yaml
   - platform: universal
