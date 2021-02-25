@@ -55,7 +55,7 @@ Add the repository URL as a [custom repository](https://hacs.xyz/docs/faq/custom
 This platform has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
 0.114.1.
 
-My Shairport Sync details:
+Tested Shairport Sync details:
 ```
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
