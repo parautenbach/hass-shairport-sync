@@ -107,6 +107,7 @@ Here is one way to use this with the custom [Mini Media Player](https://github.c
     entity: media_player.universal_shairport_sync_player
     artwork: cover
     volume_stateless: true
+    toggle_power: false  # make it use turn_on/turn_off instead of the toggle service
     hide:
       power: false
       power_state: false
@@ -117,3 +118,7 @@ Here is one way to use this with the custom [Mini Media Player](https://github.c
       when_paused: false
       when_standby: false
 ```
+
+PS: Note the use of `toggle_power` above. Using the `toggle` service of the universal media player
+won't work as expected in this case (it won't do anything). Tell MMP to use the explicit `turn_on` and `turn_off`
+services instead. You can find more information [here](https://community.home-assistant.io/t/lovelace-mini-media-player/68459/2242).
