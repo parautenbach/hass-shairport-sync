@@ -1,7 +1,7 @@
 {
   "domain": "shairport_sync",
   "name": "Shairport Sync Media Player",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/parautenbach/hass-shairport-sync/",
   "requirements": [],
   "dependencies": [
