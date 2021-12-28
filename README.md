@@ -52,8 +52,10 @@ mqtt =
 Add the repository URL as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories).
 
 ### Compatibility
-This platform has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
-0.114.1.
+The current version of this integration has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
+2021.12.5.
+
+Version 1.0.3 of this integration was tested against Home Assistant 0.114.1 and supported up to version 2021.11.5.
 
 Tested Shairport Sync details:
 ```

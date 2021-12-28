@@ -17,7 +17,7 @@ from homeassistant.components.media_player.const import (
     SUPPORT_STOP,
     SUPPORT_VOLUME_STEP,
 )
-from homeassistant.components.mqtt import async_publish, async_subscribe
+from homeassistant.components.mqtt import publish, async_subscribe
 from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.const import CONF_NAME, STATE_PAUSED, STATE_PLAYING
 from homeassistant.core import callback
@@ -225,42 +225,42 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_media_play(self):
         """Send play command."""
         _LOGGER.debug("Sending play command")
-        async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
+        publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
     async def async_media_pause(self):
         """Send pause command."""
         _LOGGER.debug("Sending pause command")
-        async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+        publish(self.hass, self._remote_topic, COMMAND_PAUSE)
 
     async def async_media_stop(self):
         """Send stop command."""
         _LOGGER.debug("Sending stop command")
-        async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+        publish(self.hass, self._remote_topic, COMMAND_PAUSE)
 
     async def async_media_previous_track(self):
         """Send previous track command."""
         _LOGGER.debug("Sending skip previous command")
-        async_publish(self.hass, self._remote_topic, COMMAND_SKIP_PREVIOUS)
+        publish(self.hass, self._remote_topic, COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self):
         """Send next track command."""
         _LOGGER.debug("Sending skip next command")
-        async_publish(self.hass, self._remote_topic, COMMAND_SKIP_NEXT)
+        publish(self.hass, self._remote_topic, COMMAND_SKIP_NEXT)
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Play a piece of media."""
         _LOGGER.debug("Sending play media command")
-        async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
+        publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
     async def async_volume_up(self):
         """Turn volume up for media player."""
         _LOGGER.debug("Sending volume up command")
-        async_publish(self.hass, self._remote_topic, COMMAND_VOLUME_UP)
+        publish(self.hass, self._remote_topic, COMMAND_VOLUME_UP)
 
     async def async_volume_down(self):
         """Turn volume down for media player."""
         _LOGGER.debug("Sending volume down command")
-        async_publish(self.hass, self._remote_topic, COMMAND_VOLUME_DOWN)
+        publish(self.hass, self._remote_topic, COMMAND_VOLUME_DOWN)
 
     async def async_media_play_pause(self):
         """Play or pause the media player."""
@@ -268,9 +268,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             "Sending toggle play/pause command; currently %s", self._player_state
         )
         if self._player_state == STATE_PLAYING:
-            async_publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+            publish(self.hass, self._remote_topic, COMMAND_PAUSE)
         else:
-            async_publish(self.hass, self._remote_topic, COMMAND_PLAY)
+            publish(self.hass, self._remote_topic, COMMAND_PLAY)
 
     async def async_get_media_image(self):
         """Fetch the image of the currently playing media."""
