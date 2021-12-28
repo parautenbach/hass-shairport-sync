@@ -9,3 +9,7 @@
 ## v1.1.0
 ### Compatibility
 - Support for Home Assistant 2021.12, where the MQTT publish function is now a coroutine.
+
+## v1.1.1
+### Deprecations
+- Replace deprecated HA device class for media player speakers. 
