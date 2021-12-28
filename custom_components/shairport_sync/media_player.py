@@ -3,8 +3,8 @@ import hashlib
 import logging
 
 from homeassistant.components.media_player import (
-    DEVICE_CLASS_SPEAKER,
     PLATFORM_SCHEMA,
+    MediaPlayerDeviceClass,
     MediaPlayerEntity,
 )
 from homeassistant.components.media_player.const import (
@@ -214,7 +214,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     @property
     def device_class(self):
-        return DEVICE_CLASS_SPEAKER
+        return MediaPlayerDeviceClass.SPEAKER.value
 
     # is_on
     # async def async_turn_on(self):  # async?
