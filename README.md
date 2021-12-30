@@ -124,3 +124,7 @@ Here is one way to use this with the custom [Mini Media Player](https://github.c
 PS: Note the use of `toggle_power` above. Using the `toggle` service of the universal media player
 won't work as expected in this case (it won't do anything). Tell MMP to use the explicit `turn_on` and `turn_off`
 services instead. You can find more information [here](https://community.home-assistant.io/t/lovelace-mini-media-player/68459/2242).
+
+[!["Buy Me A Beer"](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png =x60)](https://www.buymeacoffee.com/parautenbach)
+
+<a href="https://www.buymeacoffee.com/parautenbach" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
