@@ -40,7 +40,7 @@ mqtt =
 {
     enabled = "yes";
     hostname = "<host_of_your_mqtt_broker>";
-    port = 1833; // MQTT broker port; this is the default
+    port = 1883; // MQTT broker port; this is the default
     topic = "your/mqtt/topic";
     published_parsed = "yes"; // For metadata
     publish_cover = "yes"; // Album art
