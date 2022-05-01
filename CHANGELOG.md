@@ -13,3 +13,7 @@
 ## v1.1.1
 ### Deprecations
 - Replace deprecated HA device class for media player speakers. 
+
+## v1.2.0
+### New
+- Support for album name (thanks ahayworth).

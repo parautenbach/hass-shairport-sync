@@ -6,3 +6,4 @@ scripts
 *.zip
 htmlcov
 .coverage
+.DS_Store
