@@ -24,22 +24,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import voluptuous as vol
 
 
-from .const import (
-    DOMAIN,
-    COMMAND_PAUSE,
-    COMMAND_PLAY,
-    COMMAND_SKIP_NEXT,
-    COMMAND_SKIP_PREVIOUS,
-    COMMAND_VOLUME_DOWN,
-    COMMAND_VOLUME_UP,
-    TOP_LEVEL_TOPIC_ARTIST,
-    TOP_LEVEL_TOPIC_ALBUM,
-    TOP_LEVEL_TOPIC_COVER,
-    TOP_LEVEL_TOPIC_PLAY_END,
-    TOP_LEVEL_TOPIC_PLAY_START,
-    TOP_LEVEL_TOPIC_REMOTE,
-    TOP_LEVEL_TOPIC_TITLE,
-)
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
