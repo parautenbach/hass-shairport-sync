@@ -24,7 +24,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import voluptuous as vol
 
 
-from .const import *
+from .const import DOMAIN, Command, TopLevelTopic
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self.hass = hass
         self._name = name
         self._base_topic = topic
-        self._remote_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_REMOTE}"
+        self._remote_topic = f"{self._base_topic}/{TopLevelTopic.REMOTE}"
         self._player_state = MediaPlayerState.IDLE
         self._title = None
         self._artist = None
@@ -155,13 +155,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self.async_write_ha_state()
 
         topic_map = {
-            TOP_LEVEL_TOPIC_PLAY_START: (play_started, "utf-8"),
-            TOP_LEVEL_TOPIC_PLAY_RESUME: (play_started, "utf-8"),
-            TOP_LEVEL_TOPIC_PLAY_END: (play_ended, "utf-8"),
-            TOP_LEVEL_TOPIC_ARTIST: (artist_updated, "utf-8"),
-            TOP_LEVEL_TOPIC_ALBUM: (album_updated, "utf-8"),
-            TOP_LEVEL_TOPIC_TITLE: (title_updated, "utf-8"),
-            TOP_LEVEL_TOPIC_COVER: (artwork_updated, None),
+            TopLevelTopic.PLAY_START: (play_started, "utf-8"),
+            TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
+            TopLevelTopic.PLAY_END: (play_ended, "utf-8"),
+            TopLevelTopic.ARTIST: (artist_updated, "utf-8"),
+            TopLevelTopic.ALBUM: (album_updated, "utf-8"),
+            TopLevelTopic.TITLE: (title_updated, "utf-8"),
+            TopLevelTopic.COVER: (artwork_updated, None),
         }
 
         for (top_level_topic, (topic_callback, encoding)) in topic_map.items():
@@ -264,31 +264,31 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
     async def async_media_play(self) -> None:
         """Send play command."""
-        await self._send_command_update_state(COMMAND_PLAY, MediaPlayerState.PLAYING)
+        await self._send_command_update_state(Command.PLAY, MediaPlayerState.PLAYING)
 
     async def async_media_pause(self) -> None:
         """Send pause command."""
-        await self._send_command_update_state(COMMAND_PAUSE, MediaPlayerState.PAUSED)
+        await self._send_command_update_state(Command.PAUSE, MediaPlayerState.PAUSED)
 
     async def async_media_stop(self) -> None:
         """Send stop command."""
-        await self._send_command_update_state(COMMAND_STOP, MediaPlayerState.IDLE)
+        await self._send_command_update_state(Command.STOP, MediaPlayerState.IDLE)
 
     async def async_media_previous_track(self) -> None:
         """Send previous track command."""
-        await self._send_remote_command(COMMAND_SKIP_PREVIOUS)
+        await self._send_remote_command(Command.SKIP_PREVIOUS)
 
     async def async_media_next_track(self) -> None:
         """Send next track command."""
-        await self._send_remote_command(COMMAND_SKIP_NEXT)
+        await self._send_remote_command(Command.SKIP_NEXT)
 
     async def async_volume_up(self) -> None:
         """Turn volume up for media player."""
-        await self._send_remote_command(COMMAND_VOLUME_UP)
+        await self._send_remote_command(Command.VOLUME_UP)
 
     async def async_volume_down(self) -> None:
         """Turn volume down for media player."""
-        await self._send_remote_command(COMMAND_VOLUME_DOWN)
+        await self._send_remote_command(Command.VOLUME_DOWN)
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""
@@ -296,9 +296,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             "Sending toggle play/pause command; currently %s", self._player_state
         )
         if self._player_state == MediaPlayerState.PLAYING:
-            await self._send_command_update_state(COMMAND_PAUSE, MediaPlayerState.PAUSED)
+            await self._send_command_update_state(Command.PAUSE, MediaPlayerState.PAUSED)
         else:
-            await self._send_command_update_state(COMMAND_PLAY, MediaPlayerState.PLAYING)
+            await self._send_command_update_state(Command.PLAY, MediaPlayerState.PLAYING)
 
     async def async_get_media_image(self) -> tuple[str | None, str | None]:
         """Fetch the image of the currently playing media."""
