@@ -125,7 +125,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Run when entity will be removed from hass."""
         _LOGGER.debug("Removing %s subscriptions", len(self._subscriptions))
         for unsubscribe in self._subscriptions:
-            await unsubscribe()
+            unsubscribe()
 
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
