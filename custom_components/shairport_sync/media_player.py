@@ -17,21 +17,26 @@ from homeassistant.components.media_player.const import (
     SUPPORT_STOP,
     SUPPORT_VOLUME_STEP,
 )
+
 from homeassistant.components.mqtt import publish, async_subscribe
+from homeassistant.components.mqtt.const import CONF_TOPIC
 from homeassistant.components.mqtt.util import valid_publish_topic
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, STATE_PAUSED, STATE_PLAYING
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import voluptuous as vol
 
+
 from .const import (
+    DOMAIN,
     COMMAND_PAUSE,
     COMMAND_PLAY,
     COMMAND_SKIP_NEXT,
     COMMAND_SKIP_PREVIOUS,
     COMMAND_VOLUME_DOWN,
     COMMAND_VOLUME_UP,
-    CONF_TOPIC,
     TOP_LEVEL_TOPIC_ARTIST,
     TOP_LEVEL_TOPIC_ALBUM,
     TOP_LEVEL_TOPIC_COVER,
@@ -67,11 +72,31 @@ SUPPORTED_FEATURES = (
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the MQTT media players."""
     _LOGGER.debug(config)
-    player = ShairportSyncMediaPlayer(
-        hass, config.get(CONF_NAME), config.get(CONF_TOPIC),
-    )
 
-    async_add_entities([player])
+    async_add_entities([ShairportSyncMediaPlayer(
+        hass,
+        config.get(CONF_NAME),
+        config.get(CONF_TOPIC),
+    )])
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Setup the media player platform for Shairport Sync."""
+
+    # Get config from entry
+    config = config_entry.data
+
+    async_add_entities([
+        ShairportSyncMediaPlayer(
+            hass,
+            config.get(CONF_NAME),
+            config.get(CONF_TOPIC),
+        )
+    ])
 
 
 class ShairportSyncMediaPlayer(MediaPlayerEntity):
@@ -177,6 +202,20 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def should_poll(self):
         """No polling needed."""
         return False
+
+    @property
+    def unique_id(self) -> str:
+        return f"shairport-sync-{self._base_topic}"
+
+    @property
+    def device_info(self) -> dict:
+        return {
+            "identifiers": {
+                (DOMAIN, self._base_topic)
+            },
+            "name": self.name,
+            "manufacturer": "mikebrady",
+        }
 
     @property
     def name(self):

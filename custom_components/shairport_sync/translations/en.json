@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Shairport Sync Media Player",
+        "description": "Enter information for your device.",
+        "data": {
+          "name": "Name",
+          "topic": "MQTT Topic"
+        }
+      }
+    },
+    "abort":{
+      "already_configured": "A device with this topic has already been configured."
+    },
+    "error":{
+      "invalid_subscribe_topic": "Invalid subscribe topic"
+    }
+  }
+}

@@ -10,5 +10,5 @@
   "codeowners": [
     "@parautenbach"
   ],
-  "config_flow": false
+  "config_flow": true
 }
