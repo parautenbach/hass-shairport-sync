@@ -6,6 +6,7 @@ DOMAIN = "shairport_sync"
 
 COMMAND_PAUSE = "pause"
 COMMAND_PLAY = "play"
+COMMAND_STOP = "stop"
 COMMAND_SKIP_NEXT = "nextitem"
 COMMAND_SKIP_PREVIOUS = "previtem"
 COMMAND_VOLUME_DOWN = "volumedown"

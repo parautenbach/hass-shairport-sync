@@ -13,7 +13,7 @@ from homeassistant.components.media_player.const import (
     MediaType,
 )
 
-from homeassistant.components.mqtt import publish, async_subscribe
+from homeassistant.components.mqtt import async_publish, async_subscribe
 from homeassistant.components.mqtt.const import CONF_TOPIC
 from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.config_entries import ConfigEntry
@@ -249,51 +249,46 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def device_class(self) -> MediaPlayerDeviceClass:
         return MediaPlayerDeviceClass.SPEAKER
 
-    # is_on
-    # async def async_turn_on(self):  # async?
-    #     """Turn the media player on."""
-    # async def async_turn_off(self):  # async?
-    #     """Turn the media player off."""
+    async def _send_remote_command(self, command) -> None:
+        """Send a command to the remote control topic."""
+        _LOGGER.debug(f"Sending '{command}' command")
+        await async_publish(self.hass, self._remote_topic, command)
+
+    async def _send_command_update_state(self, command, state) -> None:
+        """Send the play command and update local state."""
+        await self._send_remote_command(command)
+
+        # Manually set state
+        self._player_state = state
+        self.async_write_ha_state()
 
     async def async_media_play(self) -> None:
         """Send play command."""
-        _LOGGER.debug("Sending play command")
-        publish(self.hass, self._remote_topic, COMMAND_PLAY)
+        await self._send_command_update_state(COMMAND_PLAY, MediaPlayerState.PLAYING)
 
     async def async_media_pause(self) -> None:
         """Send pause command."""
-        _LOGGER.debug("Sending pause command")
-        publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+        await self._send_command_update_state(COMMAND_PAUSE, MediaPlayerState.PAUSED)
 
     async def async_media_stop(self) -> None:
         """Send stop command."""
-        _LOGGER.debug("Sending stop command")
-        publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+        await self._send_command_update_state(COMMAND_STOP, MediaPlayerState.IDLE)
 
     async def async_media_previous_track(self) -> None:
         """Send previous track command."""
-        _LOGGER.debug("Sending skip previous command")
-        publish(self.hass, self._remote_topic, COMMAND_SKIP_PREVIOUS)
+        await self._send_remote_command(COMMAND_SKIP_PREVIOUS)
 
     async def async_media_next_track(self) -> None:
         """Send next track command."""
-        _LOGGER.debug("Sending skip next command")
-        publish(self.hass, self._remote_topic, COMMAND_SKIP_NEXT)
-
-    async def async_play_media(self, media_type, media_id, **kwargs) -> None:
-        """Play a piece of media."""
-        _LOGGER.debug("Sending play media command")
-        publish(self.hass, self._remote_topic, COMMAND_PLAY)
+        await self._send_remote_command(COMMAND_SKIP_NEXT)
 
     async def async_volume_up(self) -> None:
         """Turn volume up for media player."""
-        _LOGGER.debug("Sending volume up command")
-        publish(self.hass, self._remote_topic, COMMAND_VOLUME_UP)
+        await self._send_remote_command(COMMAND_VOLUME_UP)
 
     async def async_volume_down(self) -> None:
         """Turn volume down for media player."""
-        _LOGGER.debug("Sending volume down command")
-        publish(self.hass, self._remote_topic, COMMAND_VOLUME_DOWN)
+        await self._send_remote_command(COMMAND_VOLUME_DOWN)
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""
@@ -301,9 +296,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             "Sending toggle play/pause command; currently %s", self._player_state
         )
         if self._player_state == MediaPlayerState.PLAYING:
-            publish(self.hass, self._remote_topic, COMMAND_PAUSE)
+            await self._send_command_update_state(COMMAND_PAUSE, MediaPlayerState.PAUSED)
         else:
-            publish(self.hass, self._remote_topic, COMMAND_PLAY)
+            await self._send_command_update_state(COMMAND_PLAY, MediaPlayerState.PLAYING)
 
     async def async_get_media_image(self) -> tuple[str | None, str | None]:
         """Fetch the image of the currently playing media."""
