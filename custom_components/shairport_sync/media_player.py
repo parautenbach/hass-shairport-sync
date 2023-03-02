@@ -8,21 +8,16 @@ from homeassistant.components.media_player import (
     MediaPlayerEntity,
 )
 from homeassistant.components.media_player.const import (
-    MEDIA_TYPE_MUSIC,
-    SUPPORT_NEXT_TRACK,
-    SUPPORT_PAUSE,
-    SUPPORT_PLAY,
-    SUPPORT_PLAY_MEDIA,
-    SUPPORT_PREVIOUS_TRACK,
-    SUPPORT_STOP,
-    SUPPORT_VOLUME_STEP,
+    MediaPlayerState,
+    MediaPlayerEntityFeature,
+    MediaType,
 )
 
 from homeassistant.components.mqtt import publish, async_subscribe
 from homeassistant.components.mqtt.const import CONF_TOPIC
 from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, STATE_PAUSED, STATE_PLAYING
+from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -57,16 +52,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 SUPPORTED_FEATURES = (
-    SUPPORT_PLAY
-    | SUPPORT_PLAY_MEDIA
-    | SUPPORT_PAUSE
-    | SUPPORT_STOP
-    | SUPPORT_NEXT_TRACK
-    | SUPPORT_PREVIOUS_TRACK
-    | SUPPORT_VOLUME_STEP
+    MediaPlayerEntityFeature.PLAY
+    | MediaPlayerEntityFeature.PAUSE
+    | MediaPlayerEntityFeature.STOP
+    | MediaPlayerEntityFeature.NEXT_TRACK
+    | MediaPlayerEntityFeature.PREVIOUS_TRACK
+    | MediaPlayerEntityFeature.VOLUME_STEP
 )
-# flags |= SUPPORT_TURN_ON
-# flags |= SUPPORT_TURN_OFF
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None) -> None:
@@ -109,7 +101,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._name = name
         self._base_topic = topic
         self._remote_topic = f"{self._base_topic}/{TOP_LEVEL_TOPIC_REMOTE}"
-        self._player_state = STATE_PAUSED
+        self._player_state = MediaPlayerState.IDLE
         self._title = None
         self._artist = None
         self._album = None
@@ -134,14 +126,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         def play_started(_) -> None:
             """Handle the play MQTT message."""
             _LOGGER.debug("Play started")
-            self._player_state = STATE_PLAYING
+            self._player_state = MediaPlayerState.PLAYING
             self.async_write_ha_state()
 
         @callback
         def play_ended(_) -> None:
             """Handle the pause MQTT message."""
             _LOGGER.debug("Play ended")
-            self._player_state = STATE_PAUSED
+            self._player_state = MediaPlayerState.PAUSED
             self.async_write_ha_state()
 
         @callback
@@ -230,10 +222,10 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return self._player_state
 
     @property
-    def media_content_type(self) -> str | None:
+    def media_content_type(self) -> MediaType | None:
         """Return the content type of currently playing media."""
-        _LOGGER.debug("Getting media content type: %s", MEDIA_TYPE_MUSIC)
-        return MEDIA_TYPE_MUSIC
+        _LOGGER.debug("Getting media content type: %s", MediaType.MUSIC)
+        return MediaType.MUSIC
 
     @property
     def media_title(self) -> str | None:
@@ -322,7 +314,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug(
             "Sending toggle play/pause command; currently %s", self._player_state
         )
-        if self._player_state == STATE_PLAYING:
+        if self._player_state == MediaPlayerState.PLAYING:
             publish(self.hass, self._remote_topic, COMMAND_PAUSE)
         else:
             publish(self.hass, self._remote_topic, COMMAND_PLAY)
