@@ -158,6 +158,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.PLAY_START: (play_started, "utf-8"),
             TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
             TopLevelTopic.PLAY_END: (play_ended, "utf-8"),
+            TopLevelTopic.PLAY_FLUSH: (play_ended, "utf-8"),
             TopLevelTopic.ARTIST: (artist_updated, "utf-8"),
             TopLevelTopic.ALBUM: (album_updated, "utf-8"),
             TopLevelTopic.TITLE: (title_updated, "utf-8"),

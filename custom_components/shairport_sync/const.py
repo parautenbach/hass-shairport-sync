@@ -23,6 +23,7 @@ class TopLevelTopic(StrEnum):
     ALBUM = "album"
     COVER = "cover"
     PLAY_END = "play_end"
+    PLAY_FLUSH = "play_flush"
     PLAY_START = "play_start"
     PLAY_RESUME = "play_resume"
     REMOTE = "remote"
