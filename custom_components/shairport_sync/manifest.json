@@ -1,16 +1,16 @@
 {
   "domain": "shairport_sync",
   "name": "Shairport Sync Media Player",
-  "version": "1.2.0",
-  "documentation": "https://github.com/parautenbach/hass-shairport-sync/",
-  "issue_tracker": "https://github.com/parautenbach/hass-shairport-sync/issues",
-  "iot_class": "local_push",
-  "requirements": [],
-  "dependencies": [
-    "mqtt"
-  ],
   "codeowners": [
     "@parautenbach"
   ],
-  "config_flow": true
+  "config_flow": true,
+  "dependencies": [
+    "mqtt"
+  ],
+  "documentation": "https://github.com/parautenbach/hass-shairport-sync/",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/parautenbach/hass-shairport-sync/issues",
+  "requirements": [],
+  "version": "1.2.0"
 }
