@@ -23,6 +23,15 @@ Copy the `shairport_sync` folder of this repo to
 `<config_dir>/custom_components/shairport_sync/` of your Home Assistant
 installation. Create the `custom_components` directory if it doesn't exist.
 
+### HACS
+Add the repository URL as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories).
+
+## Configuration
+
+### GUI
+Click the `Add Integration` button and search for Shairport. Enter a friendly name, and the MQTT topic when prompted.
+
+### YAML
 Add the following to your `configuration.yaml`'s `media_player` section
 replacing `your/mqtt/topic` with what's in your `shairport-sync.conf` and restart
 Home Assistant:
@@ -33,6 +42,7 @@ Home Assistant:
     topic: your/mqtt/topic
 ```
 
+### Shairport Sync
 Some important settings required in your `shairport-sync.conf`:
 
 ```
@@ -48,11 +58,11 @@ mqtt =
 }
 ```
 
-### HACS
-Add the repository URL as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories).
+## Compatibility
 
-### Compatibility
-The current version of this integration has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
+The current version of this integration has been tested against Shairport Sync 4.1 and Home Assistant Core 2023.1.7 & 2023.3.0.
+
+Version 1.1.1 of this integration has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core
 2021.12.5.
 
 Version 1.0.3 of this integration was tested against Home Assistant 0.114.1 and supported up to version 2021.11.5.
