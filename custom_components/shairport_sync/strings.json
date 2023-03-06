@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Shairport Sync Media Player",
+        "title": "Configuration",
         "description": "Enter information for your device.",
         "data": {
           "name": "Name",
@@ -14,7 +14,7 @@
       "already_configured": "A device with this topic has already been configured."
     },
     "error":{
-      "invalid_subscribe_topic": "Invalid subscribe topic"
+      "invalid_subscribe_topic": "Invalid subscribe topic."
     }
   }
 }
