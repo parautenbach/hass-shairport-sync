@@ -104,6 +104,21 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         for unsubscribe in self._subscriptions:
             unsubscribe()
 
+    def _set_state(self, state: MediaPlayerState) -> None:
+        """Update the player state."""
+
+        _LOGGER.debug(f"Setting state to '{state}'.")
+        self._player_state = state
+
+        # Clear metadata in idle state so media card doesn't display stale data
+        if state == MediaPlayerState.IDLE:
+            self._title = None
+            self._artist = None
+            self._album = None
+            self._media_image = None
+
+        self.async_write_ha_state()
+
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
 
@@ -111,22 +126,19 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         def play_started(_) -> None:
             """Handle the play MQTT message."""
             _LOGGER.debug("Play started")
-            self._player_state = MediaPlayerState.PLAYING
-            self.async_write_ha_state()
+            self._set_state(MediaPlayerState.PLAYING)
 
         @callback
         def play_ended(_) -> None:
             """Handle the pause MQTT message."""
             _LOGGER.debug("Play ended")
-            self._player_state = MediaPlayerState.PAUSED
-            self.async_write_ha_state()
+            self._set_state(MediaPlayerState.PAUSED)
 
         @callback
         def active_ended(_) -> None:
             """Handle the active ended MQTT message."""
             _LOGGER.debug("Active ended")
-            self._player_state = MediaPlayerState.IDLE
-            self.async_write_ha_state()
+            self._set_state(MediaPlayerState.IDLE)
 
         @callback
         def artist_updated(message) -> None:
@@ -263,13 +275,10 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug(f"Sending '{command}' command")
         await async_publish(self.hass, self._remote_topic, command)
 
-    async def _send_command_update_state(self, command, state) -> None:
-        """Send the play command and update local state."""
+    async def _send_command_update_state(self, command: Command, state: MediaPlayerState) -> None:
+        """Send the command and update local state."""
         await self._send_remote_command(command)
-
-        # Manually set state
-        self._player_state = state
-        self.async_write_ha_state()
+        self._set_state(state)
 
     async def async_media_play(self) -> None:
         """Send play command."""
