@@ -140,26 +140,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.debug("Active ended")
             self._set_state(MediaPlayerState.IDLE)
 
-        @callback
-        def artist_updated(message) -> None:
-            """Handle the artist updated MQTT message."""
-            self._artist = message.payload
-            _LOGGER.debug("New artist: %s", self._artist)
-            self.async_write_ha_state()
+        def set_metadata(attr):
+            """Construct a callback that sets the desired metadata attribute."""
+            @callback
+            def F(msg) -> None:
+                setattr(self, f"_{attr}", msg.payload)
+                _LOGGER.debug(f"New {attr}: {msg.payload}")
 
-        @callback
-        def album_updated(message) -> None:
-            """Handle the album updated MQTT message."""
-            self._album = message.payload
-            _LOGGER.debug("New album: %s", self._album)
-            self.async_write_ha_state()
-
-        @callback
-        def title_updated(message) -> None:
-            """Handle the title updated MQTT message."""
-            self._title = message.payload
-            _LOGGER.debug("New title: %s", self._title)
-            self.async_write_ha_state()
+            return F
 
         @callback
         def artwork_updated(message) -> None:
@@ -179,9 +167,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.PLAY_END: (play_ended, "utf-8"),
             TopLevelTopic.PLAY_FLUSH: (play_ended, "utf-8"),
             TopLevelTopic.ACTIVE_END: (active_ended, "utf-8"),
-            TopLevelTopic.ARTIST: (artist_updated, "utf-8"),
-            TopLevelTopic.ALBUM: (album_updated, "utf-8"),
-            TopLevelTopic.TITLE: (title_updated, "utf-8"),
+            TopLevelTopic.ARTIST: (set_metadata("artist"), "utf-8"),
+            TopLevelTopic.ALBUM: (set_metadata("album"), "utf-8"),
+            TopLevelTopic.TITLE: (set_metadata("title"), "utf-8"),
             TopLevelTopic.COVER: (artwork_updated, None),
         }
 
