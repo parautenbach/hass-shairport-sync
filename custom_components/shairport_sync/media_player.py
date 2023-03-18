@@ -43,6 +43,7 @@ SUPPORTED_FEATURES = (
     | MediaPlayerEntityFeature.NEXT_TRACK
     | MediaPlayerEntityFeature.PREVIOUS_TRACK
     | MediaPlayerEntityFeature.VOLUME_STEP
+    | MediaPlayerEntityFeature.VOLUME_MUTE
 )
 
 
@@ -290,6 +291,10 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_volume_down(self) -> None:
         """Turn volume down for media player."""
         await self._send_remote_command(Command.VOLUME_DOWN)
+
+    async def async_mute_volume(self, mute: bool) -> None:
+        """Send mute command."""
+        await self._send_remote_command(Command.VOLUME_MUTE)
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""
