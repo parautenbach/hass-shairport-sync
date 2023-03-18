@@ -122,6 +122,13 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self.async_write_ha_state()
 
         @callback
+        def active_ended(_) -> None:
+            """Handle the active ended MQTT message."""
+            _LOGGER.debug("Active ended")
+            self._player_state = MediaPlayerState.IDLE
+            self.async_write_ha_state()
+
+        @callback
         def artist_updated(message) -> None:
             """Handle the artist updated MQTT message."""
             self._artist = message.payload
@@ -159,6 +166,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
             TopLevelTopic.PLAY_END: (play_ended, "utf-8"),
             TopLevelTopic.PLAY_FLUSH: (play_ended, "utf-8"),
+            TopLevelTopic.ACTIVE_END: (active_ended, "utf-8"),
             TopLevelTopic.ARTIST: (artist_updated, "utf-8"),
             TopLevelTopic.ALBUM: (album_updated, "utf-8"),
             TopLevelTopic.TITLE: (title_updated, "utf-8"),
