@@ -17,3 +17,7 @@
 ## v1.2.0
 ### New
 - Support for album name (thanks ahayworth).
+
+## v1.2.1
+### Fix
+- Set the idle state when the stream ends and clear the metadata (thanks mill1000).
