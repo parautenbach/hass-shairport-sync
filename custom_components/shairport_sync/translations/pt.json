@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuração",
+        "description": "Inserir a informação do teu equipamento.",
+        "data": {
+          "name": "Nome",
+          "topic": "Tópico do MQTT "
+        }
+      }
+    },
+    "abort":{
+      "already_configured": "O equipamento com este tópico já se encontra configurado."
+    },
+    "error":{
+      "invalid_subscribe_topic": "Tópico invalido."
+    }
+  }
+}
