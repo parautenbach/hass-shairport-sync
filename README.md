@@ -52,7 +52,7 @@ mqtt =
     hostname = "<host_of_your_mqtt_broker>";
     port = 1883; // MQTT broker port; this is the default
     topic = "your/mqtt/topic";
-    published_parsed = "yes"; // For metadata
+    publish_parsed = "yes"; // For metadata
     publish_cover = "yes"; // Album art
     enable_remote = "yes"; // Remote control
 }
