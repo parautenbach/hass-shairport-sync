@@ -1,4 +1,4 @@
-black==19.10b0
+black==24.3.0
 flake8==3.8.3
 flake8-docstrings==1.5.0
 pydocstyle==5.0.2
@@ -7,3 +7,10 @@ pylint-strict-informational==0.1
 pytest
 pytest-cov==2.9.0
 pytest-homeassistant
+aiohttp>=3.9.2 # not directly required, pinned by Snyk to avoid a vulnerability
+cryptography>=42.0.2 # not directly required, pinned by Snyk to avoid a vulnerability
+homeassistant>=2023.12.3 # not directly required, pinned by Snyk to avoid a vulnerability
+httpx>=0.23.0 # not directly required, pinned by Snyk to avoid a vulnerability
+pyjwt>=2.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
+pyyaml>=5.4 # not directly required, pinned by Snyk to avoid a vulnerability
+requests>=2.31.0 # not directly required, pinned by Snyk to avoid a vulnerability
