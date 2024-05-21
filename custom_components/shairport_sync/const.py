@@ -16,6 +16,7 @@ class Command(StrEnum):
     SKIP_PREVIOUS = "previtem"
     VOLUME_DOWN = "volumedown"
     VOLUME_UP = "volumeup"
+    VOLUME_MUTE = "mutetoggle"
 
 
 class TopLevelTopic(StrEnum):
