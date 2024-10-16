@@ -267,7 +267,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     @property
     def is_volume_muted(self) -> bool | None:
         """Return mute state of player."""
-        return self._volume == "-144.0"
+        return self._volume == "-144.00"
 
     async def _send_remote_command(self, command) -> None:
         """Send a command to the remote control topic."""
