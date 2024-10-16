@@ -82,6 +82,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._base_topic = topic
         self._remote_topic = f"{self._base_topic}/{TopLevelTopic.REMOTE}"
         self._player_state = MediaPlayerState.IDLE
+        self._volume = None
         self._title = None
         self._artist = None
         self._album = None
