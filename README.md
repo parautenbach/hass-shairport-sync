@@ -1,7 +1,7 @@
 # Shairport Sync media player for Home Assistant
 
 This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/)
-for [Home Assistant](https://home-assistant.io/) allows you to control and get
+for [Home Assistant](https://home-assistant.io/) allows you to get
 updates from a [Shairport Sync](https://github.com/mikebrady/shairport-sync/)
 installation using [MQTT](https://mqtt.org/).
 
@@ -66,7 +66,11 @@ mqtt =
 
 ## Compatibility
 
-The current version of this integration has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core 2024.10.0.
+The current version of this integration has been tested against Shairport Sync 4.3.7 and Home Assistant Core 2025.1.1.
+
+### Version 1.4
+
+This version has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core 2024.10.0.
 
 ### Version 1.3.1
 
@@ -85,6 +89,14 @@ Tested Shairport Sync details:
 ```
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
+
+## Controlling Shairport-Sync Through Home Assistant
+
+As of July 26, 2025, remote control via Shairport-Sync remains nonfunctional (on newer OS versions) due to recent changes made by Apple.
+For future updates on this issue, check [here](https://github.com/mikebrady/shairport-sync/issues/1858).
+
+Because of that features like play/pause, next/previous track, and volume control are currently not working in Home Assistant.
+They only display the current state reported by Shairport Sync.
 
 ## Troubleshooting
 

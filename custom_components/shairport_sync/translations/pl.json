@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja",
+        "description": "Wprowadź informacje o swoim urządzeniu.",
+        "data": {
+          "name": "Nazwa urządzenia",
+          "topic": "Temat MQTT"
+        }
+      }
+    },
+    "abort":{
+      "already_configured": "Urządzenie z tym tematem zostało już skonfigurowane."
+    },
+    "error":{
+      "invalid_subscribe_topic": "Nieprawidłowy temat."
+    }
+  }
+}

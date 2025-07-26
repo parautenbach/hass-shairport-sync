@@ -41,6 +41,7 @@ SUPPORTED_FEATURES = (
     | MediaPlayerEntityFeature.NEXT_TRACK
     | MediaPlayerEntityFeature.PREVIOUS_TRACK
     | MediaPlayerEntityFeature.VOLUME_STEP
+    | MediaPlayerEntityFeature.VOLUME_SET
 )
 
 
@@ -86,6 +87,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._album = None
         self._media_image = None
         self._subscriptions = []
+        self._volume_level = None
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -112,6 +114,21 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self._media_image = None
 
         self.async_write_ha_state()
+
+    def calculate_volume_level(self, volume: str) -> float:
+        """Calculate the volume level from a string."""
+        if volume is None:
+            return 0.0
+        try:
+            volume_parts = volume.split(",")
+            volume_level = float(volume_parts[0])
+            calculated_volume = (volume_level / 30) + 1
+            calculated_volume = max(0.0, min(1.0, calculated_volume))
+            _LOGGER.debug("Calculated volume level: %s", calculated_volume)
+            return calculated_volume
+        except (ValueError, IndexError) as e:
+            _LOGGER.error("Error calculating volume level: %s", e)
+            return 0.0
 
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
@@ -156,6 +173,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self._media_image = message.payload
             self.async_write_ha_state()
 
+        @callback
+        def set_metadata_volume_level(msg) -> None:
+            """Handle the volume MQTT message."""
+            calculated_volume = self.calculate_volume_level(msg.payload)
+            _LOGGER.debug("New volume level: %s", calculated_volume)
+            self._volume_level = calculated_volume
+            self.async_write_ha_state()
+
         topic_map = {
             TopLevelTopic.PLAY_START: (play_started, "utf-8"),
             TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
@@ -166,6 +191,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.ALBUM: (set_metadata("album"), "utf-8"),
             TopLevelTopic.TITLE: (set_metadata("title"), "utf-8"),
             TopLevelTopic.COVER: (artwork_updated, None),
+            TopLevelTopic.VOLUME: (set_metadata_volume_level, "utf-8"),
         }
 
         for (top_level_topic, (topic_callback, encoding)) in topic_map.items():
@@ -243,6 +269,12 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return None
 
     @property
+    def volume_level(self) -> float | None:
+        """Return the volume level of the media player."""
+        _LOGGER.debug("Getting volume level: %s", self._volume_level)
+        return self._volume_level
+
+    @property
     def supported_features(self) -> int:
         """Flag media player features that are supported."""
         return SUPPORTED_FEATURES
@@ -290,6 +322,11 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_volume_down(self) -> None:
         """Turn volume down for media player."""
         await self._send_remote_command(Command.VOLUME_DOWN)
+
+    def set_volume_level(self, volume: float) -> None:
+        """PLACEHOLDER"""
+        _LOGGER.debug("Setting volume level to %s", volume)
+        pass
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""
