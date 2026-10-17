@@ -1,4 +1,5 @@
 """For media players that are controlled via MQTT."""
+import asyncio
 import hashlib
 import logging
 
@@ -25,6 +26,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN, Command, TopLevelTopic
 
 _LOGGER = logging.getLogger(__name__)
+
+"""Default values for volume control."""
+VOLUME_DEFAULT_STEP = 0.0625   # volume default step (1/16), updated on the fly
+VOLUME_MAX_STEPS = 40          # infinite loop protection
+VOLUME_FEEDBACK_TIMEOUT = 2.0  # seconds to wait for volume feedback from shairport-sync before giving up
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -88,6 +94,11 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._media_image = None
         self._subscriptions = []
         self._volume_level = None
+        self._idle_task = None
+        self._volume_target = None
+        self._volume_task = None
+        self._volume_event = asyncio.Event()
+        self._volume_step = VOLUME_DEFAULT_STEP
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -99,6 +110,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug("Removing %s subscriptions", len(self._subscriptions))
         for unsubscribe in self._subscriptions:
             unsubscribe()
+        if self._volume_task:
+            self._volume_task.cancel()
+            self._volume_task = None
 
     def _set_state(self, state: MediaPlayerState) -> None:
         """Update the player state."""
@@ -137,6 +151,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         def play_started(_) -> None:
             """Handle the play MQTT message."""
             _LOGGER.debug("Play started")
+            if self._idle_task:
+                self._idle_task.cancel()
+                self._idle_task = None
             self._set_state(MediaPlayerState.PLAYING)
 
         @callback
@@ -179,6 +196,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             calculated_volume = self.calculate_volume_level(msg.payload)
             _LOGGER.debug("New volume level: %s", calculated_volume)
             self._volume_level = calculated_volume
+            self._volume_event.set()
             self.async_write_ha_state()
 
         topic_map = {
@@ -323,10 +341,45 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         """Turn volume down for media player."""
         await self._send_remote_command(Command.VOLUME_DOWN)
 
-    def set_volume_level(self, volume: float) -> None:
-        """PLACEHOLDER"""
+    async def async_set_volume_level(self, volume: float) -> None:
+        """Set volume by stepping up/down until the target is reached."""
         _LOGGER.debug("Setting volume level to %s", volume)
-        pass
+        self._volume_target = max(0.0, min(1.0, volume))
+
+        if self._volume_task and not self._volume_task.done():
+            return
+        self._volume_task = self.hass.async_create_task(self._async_adjust_volume())
+
+    async def _async_adjust_volume(self) -> None:
+        """Step the volume towards self._volume_target using volumeup/volumedown."""
+        for _ in range(VOLUME_MAX_STEPS):
+            current = self._volume_level
+            target = self._volume_target
+            if current is None or target is None:
+                _LOGGER.debug("Unknown current volume, cannot adjust")
+                return
+
+            diff = target - current
+            if abs(diff) < self._volume_step / 2:
+                _LOGGER.debug("Volume target reached (%s ~ %s)", current, target)
+                return
+
+            self._volume_event.clear()
+            await self._send_remote_command(Command.VOLUME_UP if diff > 0 else Command.VOLUME_DOWN)
+
+            try:
+                await asyncio.wait_for(self._volume_event.wait(), timeout=VOLUME_FEEDBACK_TIMEOUT)
+            except asyncio.TimeoutError:
+                _LOGGER.warning("No volume feedback from shairport-sync, giving up")
+                return
+
+            new = self._volume_level
+            observed = abs(new - current)
+            if observed == 0:
+                _LOGGER.debug("Volume did not change, stopping")
+                return
+            if observed <= 0.25:
+                self._volume_step = observed
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""

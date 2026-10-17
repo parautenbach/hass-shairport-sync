@@ -1,7 +1,7 @@
 # Shairport Sync media player for Home Assistant
 
 This custom [`media_player`](https://www.home-assistant.io/integrations/media_player/)
-for [Home Assistant](https://home-assistant.io/) allows you to get
+for [Home Assistant](https://home-assistant.io/) allows you to control and get
 updates from a [Shairport Sync](https://github.com/mikebrady/shairport-sync/)
 installation using [MQTT](https://mqtt.org/).
 
@@ -66,7 +66,7 @@ mqtt =
 
 ## Compatibility
 
-The current version of this integration has been tested against Shairport Sync 4.3.7 and Home Assistant Core 2025.1.1.
+The current version of this integration has been tested against Shairport Sync 5.6 and Home Assistant Core 2026.7.0.
 
 ### Version 1.4
 
@@ -90,13 +90,19 @@ Tested Shairport Sync details:
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
 
-## Controlling Shairport-Sync Through Home Assistant
+## Controlling Shairport Sync Through Home Assistant
 
-As of July 26, 2025, remote control via Shairport-Sync remains nonfunctional (on newer OS versions) due to recent changes made by Apple.
-For future updates on this issue, check [here](https://github.com/mikebrady/shairport-sync/issues/1858).
+Remote control of AirPlay 2 devices requires Shairport Sync 5.6 or newer.
 
-Because of that features like play/pause, next/previous track, and volume control are currently not working in Home Assistant.
-They only display the current state reported by Shairport Sync.
+Shairport Sync 5.6 has a [bug](https://github.com/mikebrady/shairport-sync/issues/2314) that prevents track metadata (title, artist, album and cover art) from being sent through MQTT. If a newer release that fixes this bug is available, it is recommended to upgrade.
+
+If you need to stay on Shairport Sync 5.6, you can work around the bug by adding the following setting to the `diagnostics` section of your `shairport-sync.conf`:
+
+```
+	get_plist_metadata = "no"; // set this temporary setting to "no" to get the older classic metadata information even in AirPlay 2 mode. For backwards compatibility. Deprecated.
+```
+
+Note that this setting is deprecated and may be removed in a future release.
 
 ## Troubleshooting
 
