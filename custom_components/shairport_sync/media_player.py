@@ -134,9 +134,15 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         if volume is None:
             return 0.0
         try:
+            """
+            Shairport Sync publishes the volume topic as "airplay_volume,volume,lowest_volume,highest_volume"
+            aka "airplay_volume,mixer_volume_db,lowest_db,highest_db"
+            """
             volume_parts = volume.split(",")
             volume_level = float(volume_parts[0])
+            # Map the AirPlay range [-30.0, 0.0] linearly to [0.0, 1.0]
             calculated_volume = (volume_level / 30) + 1
+            # Clamp to [0.0, 1.0], this also maps the "muted" value (-144.0) to 0.0
             calculated_volume = max(0.0, min(1.0, calculated_volume))
             _LOGGER.debug("Calculated volume level: %s", calculated_volume)
             return calculated_volume
