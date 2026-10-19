@@ -1,3 +1,8 @@
+## v1.5.0
+### New
+- Volume slider
+- Polish translation for config flow
+
 ## v1.4.0
 ### Fixes
 - Home Assistant Core deprecations

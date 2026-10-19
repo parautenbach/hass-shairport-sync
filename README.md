@@ -66,7 +66,11 @@ mqtt =
 
 ## Compatibility
 
-The current version of this integration has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core 2024.10.0.
+The current version of this integration has been tested against Shairport Sync 5.6 and Home Assistant Core 2026.7.0.
+
+### Version 1.4
+
+This version has been tested against Shairport Sync 3.3.7rc1 and Home Assistant Core 2024.10.0.
 
 ### Version 1.3.1
 
@@ -85,6 +89,20 @@ Tested Shairport Sync details:
 ```
 3.3.7rc1-alac-OpenSSL-Avahi-ALSA-pipe-soxr-metadata-mqtt-sysconfdir:/etc.
 ```
+
+## Controlling Shairport Sync Through Home Assistant
+
+Remote control of AirPlay 2 devices requires Shairport Sync 5.6 or newer.
+
+Shairport Sync 5.6 has a [bug](https://github.com/mikebrady/shairport-sync/issues/2314) that prevents track metadata (title, artist, album and cover art) from being sent through MQTT. If a newer release that fixes this bug is available, it is recommended to upgrade.
+
+If you need to stay on Shairport Sync 5.6, you can work around the bug by adding the following setting to the `diagnostics` section of your `shairport-sync.conf`:
+
+```
+	get_plist_metadata = "no"; // set this temporary setting to "no" to get the older classic metadata information even in AirPlay 2 mode. For backwards compatibility. Deprecated.
+```
+
+Note that this setting is deprecated and may be removed in a future release.
 
 ## Troubleshooting
 

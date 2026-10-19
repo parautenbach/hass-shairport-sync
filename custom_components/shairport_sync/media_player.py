@@ -1,4 +1,5 @@
 """For media players that are controlled via MQTT."""
+import asyncio
 import hashlib
 import logging
 
@@ -26,6 +27,11 @@ from .const import DOMAIN, Command, TopLevelTopic
 
 _LOGGER = logging.getLogger(__name__)
 
+"""Default values for volume control."""
+VOLUME_DEFAULT_STEP = 0.0625   # volume default step (1/16), updated on the fly
+VOLUME_MAX_STEPS = 40          # infinite loop protection
+VOLUME_FEEDBACK_TIMEOUT = 2.0  # seconds to wait for volume feedback from shairport-sync before giving up
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME): cv.string,
@@ -41,6 +47,7 @@ SUPPORTED_FEATURES = (
     | MediaPlayerEntityFeature.NEXT_TRACK
     | MediaPlayerEntityFeature.PREVIOUS_TRACK
     | MediaPlayerEntityFeature.VOLUME_STEP
+    | MediaPlayerEntityFeature.VOLUME_SET
 )
 
 
@@ -86,6 +93,12 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._album = None
         self._media_image = None
         self._subscriptions = []
+        self._volume_level = None
+        self._idle_task = None
+        self._volume_target = None
+        self._volume_task = None
+        self._volume_event = asyncio.Event()
+        self._volume_step = VOLUME_DEFAULT_STEP
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -97,6 +110,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         _LOGGER.debug("Removing %s subscriptions", len(self._subscriptions))
         for unsubscribe in self._subscriptions:
             unsubscribe()
+        if self._volume_task:
+            self._volume_task.cancel()
+            self._volume_task = None
 
     def _set_state(self, state: MediaPlayerState) -> None:
         """Update the player state."""
@@ -113,6 +129,27 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
         self.async_write_ha_state()
 
+    def calculate_volume_level(self, volume: str) -> float:
+        """Calculate the volume level from a string."""
+        if volume is None:
+            return 0.0
+        try:
+            """
+            Shairport Sync publishes the volume topic as "airplay_volume,volume,lowest_volume,highest_volume"
+            aka "airplay_volume,mixer_volume_db,lowest_db,highest_db"
+            """
+            volume_parts = volume.split(",")
+            volume_level = float(volume_parts[0])
+            # Map the AirPlay range [-30.0, 0.0] linearly to [0.0, 1.0]
+            calculated_volume = (volume_level / 30) + 1
+            # Clamp to [0.0, 1.0], this also maps the "muted" value (-144.0) to 0.0
+            calculated_volume = max(0.0, min(1.0, calculated_volume))
+            _LOGGER.debug("Calculated volume level: %s", calculated_volume)
+            return calculated_volume
+        except (ValueError, IndexError) as e:
+            _LOGGER.error("Error calculating volume level: %s", e)
+            return 0.0
+
     async def _subscribe_to_topics(self):
         """(Re)Subscribe to topics."""
 
@@ -120,6 +157,9 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         def play_started(_) -> None:
             """Handle the play MQTT message."""
             _LOGGER.debug("Play started")
+            if self._idle_task:
+                self._idle_task.cancel()
+                self._idle_task = None
             self._set_state(MediaPlayerState.PLAYING)
 
         @callback
@@ -156,6 +196,15 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self._media_image = message.payload
             self.async_write_ha_state()
 
+        @callback
+        def set_metadata_volume_level(msg) -> None:
+            """Handle the volume MQTT message."""
+            calculated_volume = self.calculate_volume_level(msg.payload)
+            _LOGGER.debug("New volume level: %s", calculated_volume)
+            self._volume_level = calculated_volume
+            self._volume_event.set()
+            self.async_write_ha_state()
+
         topic_map = {
             TopLevelTopic.PLAY_START: (play_started, "utf-8"),
             TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
@@ -166,6 +215,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.ALBUM: (set_metadata("album"), "utf-8"),
             TopLevelTopic.TITLE: (set_metadata("title"), "utf-8"),
             TopLevelTopic.COVER: (artwork_updated, None),
+            TopLevelTopic.VOLUME: (set_metadata_volume_level, "utf-8"),
         }
 
         for (top_level_topic, (topic_callback, encoding)) in topic_map.items():
@@ -243,6 +293,12 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return None
 
     @property
+    def volume_level(self) -> float | None:
+        """Return the volume level of the media player."""
+        _LOGGER.debug("Getting volume level: %s", self._volume_level)
+        return self._volume_level
+
+    @property
     def supported_features(self) -> int:
         """Flag media player features that are supported."""
         return SUPPORTED_FEATURES
@@ -290,6 +346,46 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     async def async_volume_down(self) -> None:
         """Turn volume down for media player."""
         await self._send_remote_command(Command.VOLUME_DOWN)
+
+    async def async_set_volume_level(self, volume: float) -> None:
+        """Set volume by stepping up/down until the target is reached."""
+        _LOGGER.debug("Setting volume level to %s", volume)
+        self._volume_target = max(0.0, min(1.0, volume))
+
+        if self._volume_task and not self._volume_task.done():
+            return
+        self._volume_task = self.hass.async_create_task(self._async_adjust_volume())
+
+    async def _async_adjust_volume(self) -> None:
+        """Step the volume towards self._volume_target using volumeup/volumedown."""
+        for _ in range(VOLUME_MAX_STEPS):
+            current = self._volume_level
+            target = self._volume_target
+            if current is None or target is None:
+                _LOGGER.debug("Unknown current volume, cannot adjust")
+                return
+
+            diff = target - current
+            if abs(diff) < self._volume_step / 2:
+                _LOGGER.debug("Volume target reached (%s ~ %s)", current, target)
+                return
+
+            self._volume_event.clear()
+            await self._send_remote_command(Command.VOLUME_UP if diff > 0 else Command.VOLUME_DOWN)
+
+            try:
+                await asyncio.wait_for(self._volume_event.wait(), timeout=VOLUME_FEEDBACK_TIMEOUT)
+            except asyncio.TimeoutError:
+                _LOGGER.warning("No volume feedback from shairport-sync, giving up")
+                return
+
+            new = self._volume_level
+            observed = abs(new - current)
+            if observed == 0:
+                _LOGGER.debug("Volume did not change, stopping")
+                return
+            if observed <= 0.25:
+                self._volume_step = observed
 
     async def async_media_play_pause(self) -> None:
         """Play or pause the media player."""
