@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    name: pytest (HA ${{ matrix.ha }})
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Pinned in requirements_test.txt
+          - ha: latest
+            plugin: ""
+          # Keep in sync with "homeassistant" in hacs.json
+          - ha: "2026.9.0"
+            plugin: "pytest-homeassistant-custom-component==0.13.363"
+    steps:
+      - uses: "actions/checkout@v5"
+      - uses: "actions/setup-python@v6"
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: pip install -r requirements_test.txt
+      - name: Install minimum Home Assistant
+        if: matrix.plugin != ''
+        run: pip install "${{ matrix.plugin }}"
+      - name: Lint
+        if: matrix.ha == 'latest'
+        run: |
+          black --check custom_components tests
+          isort --check custom_components tests
+          pylint --rcfile pylintrc custom_components/shairport_sync
+          mypy
+      - name: Run tests
+        run: pytest --cov=custom_components.shairport_sync --cov-report=term-missing

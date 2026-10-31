@@ -1,0 +1,12 @@
+# Minimal dev config. default_config is avoided because its bluetooth
+# component crashes HA on macOS.
+frontend:
+config:
+history:
+logbook:
+media_source:
+
+logger:
+  default: info
+  logs:
+    custom_components.shairport_sync: debug

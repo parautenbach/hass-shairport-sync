@@ -1,7 +1,17 @@
 ## v1.5.0
+### Compatibility
+- Requires Home Assistant 2026.9.0 or newer (uses Probatio, which replaced voluptuous)
 ### New
 - Volume slider
 - Polish translation for config flow
+### Fixes
+- Await platform setup and use `async_unload_platforms`, as required by current Home Assistant Core
+- Title, artist and album updates are shown immediately instead of waiting for the next state change
+### Improvements
+- Unit tests using pytest-homeassistant-custom-component, run on GitHub Actions against the
+  minimum and latest supported Home Assistant
+- Type annotations, checked by mypy in strict mode
+- Development and testing documentation
 
 ## v1.4.0
 ### Fixes

@@ -1,4 +1,5 @@
 """Provides the constants needed for this component."""
+
 from enum import StrEnum
 
 DOMAIN = "shairport_sync"

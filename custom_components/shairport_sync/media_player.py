@@ -1,10 +1,18 @@
 """For media players that are controlled via MQTT."""
+
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import logging
+from collections.abc import Callable
+from typing import cast
 
-import voluptuous as vol
-from homeassistant.components.media_player import (
+import probatio
+
+# MediaPlayerDeviceClass is defined here before HA 2026.10. Since then it lives in
+# media_player.const and is re-exported here, but not declared public (for mypy).
+from homeassistant.components.media_player import (  # type: ignore[attr-defined]
     PLATFORM_SCHEMA,
     MediaPlayerDeviceClass,
     MediaPlayerEntity,
@@ -16,28 +24,38 @@ from homeassistant.components.media_player.const import (
 )
 from homeassistant.components.mqtt import async_publish, async_subscribe
 from homeassistant.components.mqtt.const import CONF_TOPIC
+from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.util import valid_publish_topic
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,
+    AddEntitiesCallback,
+)
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import DOMAIN, Command, TopLevelTopic
 
 _LOGGER = logging.getLogger(__name__)
 
-"""Default values for volume control."""
-VOLUME_DEFAULT_STEP = 0.0625   # volume default step (1/16), updated on the fly
-VOLUME_MAX_STEPS = 40          # infinite loop protection
-VOLUME_FEEDBACK_TIMEOUT = 2.0  # seconds to wait for volume feedback from shairport-sync before giving up
+# Default values for volume control
+
+# Volume default step (1/16), updated on the fly
+VOLUME_DEFAULT_STEP = 0.0625
+# Infinite loop protection
+VOLUME_MAX_STEPS = 40
+# Seconds to wait for volume feedback from shairport-sync before giving up
+VOLUME_FEEDBACK_TIMEOUT = 2.0
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
-        vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_TOPIC): valid_publish_topic,
+        probatio.Required(CONF_NAME): cv.string,
+        probatio.Required(CONF_TOPIC): valid_publish_topic,
     },
-    extra=vol.REMOVE_EXTRA,
+    extra=probatio.REMOVE_EXTRA,
 )
 
 SUPPORTED_FEATURES = (
@@ -52,20 +70,29 @@ SUPPORTED_FEATURES = (
 
 
 async def async_setup_platform(
-    hass, config, async_add_entities, discovery_info=None
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the MQTT media players."""
     _LOGGER.debug(config)
 
     async_add_entities(
-        [ShairportSyncMediaPlayer(hass, config.get(CONF_NAME), config.get(CONF_TOPIC),)]
+        [
+            ShairportSyncMediaPlayer(
+                hass,
+                config[CONF_NAME],
+                config[CONF_TOPIC],
+            )
+        ]
     )
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Setup the media player platform for Shairport Sync."""
 
@@ -73,14 +100,20 @@ async def async_setup_entry(
     config = config_entry.data
 
     async_add_entities(
-        [ShairportSyncMediaPlayer(hass, config.get(CONF_NAME), config.get(CONF_TOPIC),)]
+        [
+            ShairportSyncMediaPlayer(
+                hass,
+                config[CONF_NAME],
+                config[CONF_TOPIC],
+            )
+        ]
     )
 
 
 class ShairportSyncMediaPlayer(MediaPlayerEntity):
     """Representation of an MQTT-controlled media player."""
 
-    def __init__(self, hass, name, topic) -> None:
+    def __init__(self, hass: HomeAssistant, name: str, topic: str) -> None:
         """Initialize the MQTT media device."""
         _LOGGER.debug("Initialising %s", name)
         self.hass = hass
@@ -88,15 +121,15 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         self._base_topic = topic
         self._remote_topic = f"{self._base_topic}/{TopLevelTopic.REMOTE}"
         self._player_state = MediaPlayerState.IDLE
-        self._title = None
-        self._artist = None
-        self._album = None
-        self._media_image = None
-        self._subscriptions = []
-        self._volume_level = None
-        self._idle_task = None
-        self._volume_target = None
-        self._volume_task = None
+        self._title: str | None = None
+        self._artist: str | None = None
+        self._album: str | None = None
+        self._media_image: bytes | None = None
+        self._subscriptions: list[CALLBACK_TYPE] = []
+        self._volume_level: float | None = None
+        self._idle_task: asyncio.Task[None] | None = None
+        self._volume_target: float | None = None
+        self._volume_task: asyncio.Task[None] | None = None
         self._volume_event = asyncio.Event()
         self._volume_step = VOLUME_DEFAULT_STEP
 
@@ -129,15 +162,14 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
 
         self.async_write_ha_state()
 
-    def calculate_volume_level(self, volume: str) -> float:
+    def calculate_volume_level(self, volume: str | None) -> float:
         """Calculate the volume level from a string."""
         if volume is None:
             return 0.0
         try:
-            """
-            Shairport Sync publishes the volume topic as "airplay_volume,volume,lowest_volume,highest_volume"
-            aka "airplay_volume,mixer_volume_db,lowest_db,highest_db"
-            """
+            # Shairport Sync publishes the volume topic as
+            # "airplay_volume,volume,lowest_volume,highest_volume"
+            # aka "airplay_volume,mixer_volume_db,lowest_db,highest_db"
             volume_parts = volume.split(",")
             volume_level = float(volume_parts[0])
             # Map the AirPlay range [-30.0, 0.0] linearly to [0.0, 1.0]
@@ -150,11 +182,11 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             _LOGGER.error("Error calculating volume level: %s", e)
             return 0.0
 
-    async def _subscribe_to_topics(self):
+    async def _subscribe_to_topics(self) -> None:
         """(Re)Subscribe to topics."""
 
         @callback
-        def play_started(_) -> None:
+        def play_started(_: ReceiveMessage) -> None:
             """Handle the play MQTT message."""
             _LOGGER.debug("Play started")
             if self._idle_task:
@@ -163,49 +195,53 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             self._set_state(MediaPlayerState.PLAYING)
 
         @callback
-        def play_ended(_) -> None:
+        def play_ended(_: ReceiveMessage) -> None:
             """Handle the pause MQTT message."""
             _LOGGER.debug("Play ended")
             self._set_state(MediaPlayerState.PAUSED)
 
         @callback
-        def active_ended(_) -> None:
+        def active_ended(_: ReceiveMessage) -> None:
             """Handle the active ended MQTT message."""
             _LOGGER.debug("Active ended")
             self._set_state(MediaPlayerState.IDLE)
 
-        def set_metadata(attr):
+        def set_metadata(attr: str) -> Callable[[ReceiveMessage], None]:
             """Construct a callback that sets the desired metadata attribute."""
 
             @callback
-            def _callback(msg) -> None:
+            def _callback(msg: ReceiveMessage) -> None:
                 setattr(self, f"_{attr}", msg.payload)
                 _LOGGER.debug("New %s: %s", attr, msg.payload)
+                self.async_write_ha_state()
 
             return _callback
 
         @callback
-        def artwork_updated(message) -> None:
+        def artwork_updated(message: ReceiveMessage) -> None:
             """Handle the artwork updated MQTT message."""
+            # Subscribed without an encoding, so the payload is raw bytes
+            image = cast(bytes, message.payload)
             # https://en.wikipedia.org/wiki/Magic_number_%28programming%29
             # https://en.wikipedia.org/wiki/List_of_file_signatures
-            header = " ".join(f"{b:02X}" for b in message.payload[:4])
-            _LOGGER.debug(
-                "New artwork (%s bytes); header: %s", len(message.payload), header
-            )
-            self._media_image = message.payload
+            header = " ".join(f"{b:02X}" for b in image[:4])
+            _LOGGER.debug("New artwork (%s bytes); header: %s", len(image), header)
+            self._media_image = image
             self.async_write_ha_state()
 
         @callback
-        def set_metadata_volume_level(msg) -> None:
+        def set_metadata_volume_level(msg: ReceiveMessage) -> None:
             """Handle the volume MQTT message."""
-            calculated_volume = self.calculate_volume_level(msg.payload)
+            # Subscribed with UTF-8 encoding, so the payload is decoded text
+            calculated_volume = self.calculate_volume_level(cast(str, msg.payload))
             _LOGGER.debug("New volume level: %s", calculated_volume)
             self._volume_level = calculated_volume
             self._volume_event.set()
             self.async_write_ha_state()
 
-        topic_map = {
+        topic_map: dict[
+            TopLevelTopic, tuple[Callable[[ReceiveMessage], None], str | None]
+        ] = {
             TopLevelTopic.PLAY_START: (play_started, "utf-8"),
             TopLevelTopic.PLAY_RESUME: (play_started, "utf-8"),
             TopLevelTopic.PLAY_END: (play_ended, "utf-8"),
@@ -218,7 +254,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
             TopLevelTopic.VOLUME: (set_metadata_volume_level, "utf-8"),
         }
 
-        for (top_level_topic, (topic_callback, encoding)) in topic_map.items():
+        for top_level_topic, (topic_callback, encoding) in topic_map.items():
             topic = f"{self._base_topic}/{top_level_topic}"
             _LOGGER.debug(
                 "Subscribing to topic %s with callback %s",
@@ -240,12 +276,12 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return f"shairport-sync-{self._base_topic}"
 
     @property
-    def device_info(self) -> dict:
-        return {
-            "identifiers": {(DOMAIN, self._base_topic)},
-            "name": self.name,
-            "manufacturer": "mikebrady",
-        }
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._base_topic)},
+            name=self.name,
+            manufacturer="mikebrady",
+        )
 
     @property
     def name(self) -> str:
@@ -299,7 +335,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
         return self._volume_level
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> MediaPlayerEntityFeature:
         """Flag media player features that are supported."""
         return SUPPORTED_FEATURES
 
@@ -307,7 +343,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
     def device_class(self) -> MediaPlayerDeviceClass:
         return MediaPlayerDeviceClass.SPEAKER
 
-    async def _send_remote_command(self, command) -> None:
+    async def _send_remote_command(self, command: Command) -> None:
         """Send a command to the remote control topic."""
         _LOGGER.debug("Sending '%s' command", command)
         await async_publish(self.hass, self._remote_topic, command)
@@ -371,15 +407,21 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
                 return
 
             self._volume_event.clear()
-            await self._send_remote_command(Command.VOLUME_UP if diff > 0 else Command.VOLUME_DOWN)
+            await self._send_remote_command(
+                Command.VOLUME_UP if diff > 0 else Command.VOLUME_DOWN
+            )
 
             try:
-                await asyncio.wait_for(self._volume_event.wait(), timeout=VOLUME_FEEDBACK_TIMEOUT)
-            except asyncio.TimeoutError:
+                await asyncio.wait_for(
+                    self._volume_event.wait(), timeout=VOLUME_FEEDBACK_TIMEOUT
+                )
+            except TimeoutError:
                 _LOGGER.warning("No volume feedback from shairport-sync, giving up")
                 return
 
             new = self._volume_level
+            if new is None:
+                return
             observed = abs(new - current)
             if observed == 0:
                 _LOGGER.debug("Volume did not change, stopping")
@@ -401,7 +443,7 @@ class ShairportSyncMediaPlayer(MediaPlayerEntity):
                 Command.PLAY, MediaPlayerState.PLAYING
             )
 
-    async def async_get_media_image(self) -> tuple[str | None, str | None]:
+    async def async_get_media_image(self) -> tuple[bytes | None, str | None]:
         """Fetch the image of the currently playing media."""
         _LOGGER.debug("Getting media image")
         if self._media_image:
