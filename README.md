@@ -68,7 +68,7 @@ mqtt =
 
 Version 1.5 requires Home Assistant Core 2026.9.0 or newer.
 
-The current version of this integration has been tested against Shairport Sync 5.6 and Home Assistant Core 2026.7.0.
+The current version of this integration has been tested against Shairport Sync 5.6.2 and Home Assistant Core 2026.10.4.
 
 ### Version 1.4
 
