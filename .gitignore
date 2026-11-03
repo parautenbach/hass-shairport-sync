@@ -7,3 +7,8 @@ scripts
 htmlcov
 .coverage
 .DS_Store
+.pytest_cache
+# Dev config dir: keep only the config file and the integration symlink
+config/*
+!config/configuration.yaml
+!config/custom_components/

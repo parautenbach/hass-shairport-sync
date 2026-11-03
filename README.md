@@ -17,8 +17,8 @@ Example:
 
 ### Pre-requisites
 
-You need the Home Assistant
-[MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
+You need Home Assistant Core 2026.9.0 or newer (see [Compatibility](#compatibility) for older
+versions), with the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
 
 ### HACS
 
@@ -66,7 +66,9 @@ mqtt =
 
 ## Compatibility
 
-The current version of this integration has been tested against Shairport Sync 5.6 and Home Assistant Core 2026.7.0.
+Version 1.5 requires Home Assistant Core 2026.9.0 or newer.
+
+The current version of this integration has been tested against Shairport Sync 5.6.2 and Home Assistant Core 2026.10.4.
 
 ### Version 1.4
 
@@ -166,5 +168,103 @@ Here is one way to use this with the custom [Mini Media Player](https://github.c
 PS: Note the use of `toggle_power` above. Using the `toggle` service of the universal media player
 won't work as expected in this case (it won't do anything). Tell MMP to use the explicit `turn_on` and `turn_off`
 services instead. You can find more information [here](https://community.home-assistant.io/t/lovelace-mini-media-player/68459/2242).
+
+## Development
+
+### Setup
+
+Create a virtual environment with the Python version that the targeted Home Assistant release
+requires (3.14 at the time of writing) and install the test requirements:
+
+```shell
+uv venv -p 3.14 venv
+source venv/bin/activate
+uv pip install -r requirements_test.txt
+```
+
+This installs [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component),
+which pins a specific Home Assistant release. To test against a newer Home Assistant, bump its
+version in `requirements_test.txt` (the comment there explains how to find the right one).
+
+### Unit tests
+
+```shell
+pytest --cov=custom_components.shairport_sync --cov-report=term-missing
+```
+
+The tests run against a mocked MQTT broker and need neither a broker nor Shairport Sync.
+They also run on GitHub Actions for every push.
+
+### Linting
+
+```shell
+black custom_components tests && isort custom_components tests && pylint --rcfile pylintrc custom_components/shairport_sync && mypy
+```
+
+mypy runs in strict mode on the integration (see `setup.cfg`).
+
+### hassfest
+
+[hassfest](https://developers.home-assistant.io/blog/2020/04/16/hassfest/) validates the manifest,
+translations and config flow. It runs on GitHub Actions for every push. To run it locally, start
+Docker and use the same image as the action:
+
+```shell
+docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest
+```
+
+Or, with a working Home Assistant Core development environment (see below), from the root of
+the core checkout:
+
+```shell
+python -m script.hassfest --integration-path /path/to/hass-shairport-sync/custom_components/shairport_sync
+```
+
+### Running Home Assistant locally
+
+The venv above already contains Home Assistant, so you don't need a Home Assistant Core checkout.
+The `config` directory is a minimal configuration with `config/custom_components/shairport_sync`
+symlinked to the integration, so edits are picked up on restart:
+
+```shell
+hass -c config
+```
+
+Open http://localhost:8123, complete onboarding, add the MQTT integration pointing at a real
+broker, and then add Shairport Sync. Everything that Home Assistant writes to `config` is ignored by git.
+
+`default_config` is deliberately not used in `config/configuration.yaml`, because its Bluetooth
+component crashes Home Assistant on macOS.
+
+To test against an unreleased Home Assistant, set up a
+[Core development environment](https://developers.home-assistant.io/docs/development_environment).
+Core's `script/setup` installs the requirements of every integration (many GBs); for running
+Home Assistant and hassfest a lighter install is enough, because integration requirements are
+installed on demand. From the root of the core checkout:
+
+```shell
+uv venv -p "$(cat .python-version)" venv && source venv/bin/activate
+uv pip install -e . -e packages/pytest-home-assistant -r requirements_test.txt colorlog \
+  --config-settings editable_mode=compat
+python -m script.translations develop --all
+```
+
+Then symlink the integration into core's config directory and run it from there, replacing
+`/path/to/hass-shairport-sync` with the location of this repo:
+
+```shell
+mkdir -p config/custom_components
+ln -sfn /path/to/hass-shairport-sync/custom_components/shairport_sync config/custom_components/
+hass -c config
+```
+
+### Releasing
+
+1. Update `version` in `custom_components/shairport_sync/manifest.json`, `CHANGELOG.md` and the
+   compatibility section above.
+2. If the minimum Home Assistant version changes, update `homeassistant` in `hacs.json` and the
+   matching plugin pin in the minimum job of `.github/workflows/tests.yaml`.
+3. Make sure the Tests, HACS and hassfest workflows pass.
+4. Tag the commit as `vX.Y.Z` and create a GitHub release from it. HACS picks up the release.
 
 <a href="https://www.buymeacoffee.com/parautenbach" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
