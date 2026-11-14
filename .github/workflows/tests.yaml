@@ -16,8 +16,8 @@ jobs:
           - ha: latest
             plugin: ""
           # Keep in sync with "homeassistant" in hacs.json
-          - ha: "2026.9.0"
-            plugin: "pytest-homeassistant-custom-component==0.13.363"
+          - ha: "2026.11.0"
+            plugin: "pytest-homeassistant==2026.11.0"
     steps:
       - uses: "actions/checkout@v5"
       - uses: "actions/setup-python@v6"

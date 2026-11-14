@@ -1,3 +1,10 @@
+## v1.6.0
+### Compatibility
+- Requires Home Assistant 2026.11.0 or newer
+### Improvements
+- Unit tests use Home Assistant's own pytest-homeassistant package instead of
+  pytest-homeassistant-custom-component
+
 ## v1.5.0
 ### Compatibility
 - Requires Home Assistant 2026.9.0 or newer (uses Probatio, which replaced voluptuous)
