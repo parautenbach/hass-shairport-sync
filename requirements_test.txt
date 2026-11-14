@@ -1,12 +1,11 @@
-# Pins an exact Home Assistant version. To test against a newer HA, find the
-# matching release with
-#
-#   pip index versions pytest-homeassistant-custom-component
-#
-# and check its `homeassistant==` pin. HA 2026.3+ needs Python 3.14.
-#
-# Currently homeassistant==2026.10.2
-pytest-homeassistant-custom-component==0.13.373
+# Home Assistant's own test package. Its version matches the Home Assistant
+# release it pins, so to test against a newer HA, bump this to that release.
+# HA 2026.3+ needs Python 3.14.
+pytest-homeassistant==2026.11.1
+# MQTT's config flow imports this, but neither homeassistant nor
+# pytest-homeassistant (outside its bluetooth extra) installs it. Keep in sync
+# with the hassio manifest of the pinned HA release.
+aiohasupervisor==0.8.1
 pytest-cov
 mypy
 black

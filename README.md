@@ -17,7 +17,7 @@ Example:
 
 ### Pre-requisites
 
-You need Home Assistant Core 2026.9.0 or newer (see [Compatibility](#compatibility) for older
+You need Home Assistant Core 2026.11.0 or newer (see [Compatibility](#compatibility) for older
 versions), with the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) set up.
 
 ### HACS
@@ -66,9 +66,11 @@ mqtt =
 
 ## Compatibility
 
-Version 1.5.0 requires Home Assistant Core 2026.9.0 or newer.
+Version 1.6.0 requires Home Assistant Core 2026.11.0 or newer.
 
-The current version of this integration has been tested against Shairport Sync 5.6.2 and Home Assistant Core 2026.10.4.
+### Version 1.5.0
+
+This version requires Home Assistant Core 2026.9.0 or newer, and has been tested against Shairport Sync 5.6.2 and Home Assistant Core 2026.10.4.
 
 ### Version 1.4.0
 
@@ -182,9 +184,9 @@ source venv/bin/activate
 uv pip install -r requirements_test.txt
 ```
 
-This installs [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component),
-which pins a specific Home Assistant release. To test against a newer Home Assistant, bump its
-version in `requirements_test.txt` (the comment there explains how to find the right one).
+This installs Home Assistant's own test package, [pytest-homeassistant](https://pypi.org/project/pytest-homeassistant/),
+which pins the Home Assistant release with the same version number. To test against a newer
+Home Assistant, bump its version in `requirements_test.txt`.
 
 ### Unit tests
 

@@ -6,19 +6,13 @@ import pytest
 from homeassistant.components.mqtt.const import CONF_TOPIC
 from homeassistant.const import CONF_ID, CONF_NAME
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.shairport_sync.const import DOMAIN
 
 TOPIC = "shairport"
 NAME = "Living Room"
 ENTITY_ID = "media_player.living_room"
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Enable loading custom integrations in all tests."""
-    yield
 
 
 @pytest.fixture(autouse=True)

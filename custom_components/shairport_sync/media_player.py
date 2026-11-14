@@ -9,10 +9,7 @@ from collections.abc import Callable
 from typing import cast
 
 import probatio
-
-# MediaPlayerDeviceClass is defined here before HA 2026.10. Since then it lives in
-# media_player.const and is re-exported here, but not declared public (for mypy).
-from homeassistant.components.media_player import (  # type: ignore[attr-defined]
+from homeassistant.components.media_player import (
     PLATFORM_SCHEMA,
     MediaPlayerDeviceClass,
     MediaPlayerEntity,
